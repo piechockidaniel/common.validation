@@ -1,0 +1,8 @@
+<Solution>
+  <Folder Name="/demo/">
+    <Project Path="demo/Common.Validation.Demo/Common.Validation.Demo.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <Project Path="src/Common.Validation/Common.Validation.csproj" />
+  </Folder>
+</Solution>

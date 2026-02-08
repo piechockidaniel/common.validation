@@ -1,0 +1,96 @@
+using System.Text.RegularExpressions;
+using Common.Validation.Rules;
+
+namespace Common.Validation.Extensions;
+
+/// <summary>
+/// String-specific validation rule extensions.
+/// </summary>
+public static partial class StringRuleExtensions
+{
+    // Precompiled regex patterns for common validations
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    private static partial Regex EmailRegex();
+
+    [GeneratedRegex(@"^\+?[\d\s\-\(\)]{7,20}$", RegexOptions.Compiled)]
+    private static partial Regex PhoneRegex();
+
+    /// <summary>
+    /// Validates that the string length is at most <paramref name="max"/> characters.
+    /// </summary>
+    public static IRuleBuilder<T, string> MaxLength<T>(
+        this IRuleBuilder<T, string> builder, int max)
+    {
+        return builder.AddCheck(
+            value => value is null || value.Length <= max,
+            $"must be at most {max} characters long.");
+    }
+
+    /// <summary>
+    /// Validates that the string length is at least <paramref name="min"/> characters.
+    /// </summary>
+    public static IRuleBuilder<T, string> MinLength<T>(
+        this IRuleBuilder<T, string> builder, int min)
+    {
+        return builder.AddCheck(
+            value => value is not null && value.Length >= min,
+            $"must be at least {min} characters long.");
+    }
+
+    /// <summary>
+    /// Validates that the string length is between <paramref name="min"/> and <paramref name="max"/> characters (inclusive).
+    /// </summary>
+    public static IRuleBuilder<T, string> Length<T>(
+        this IRuleBuilder<T, string> builder, int min, int max)
+    {
+        return builder.AddCheck(
+            value => value is not null && value.Length >= min && value.Length <= max,
+            $"must be between {min} and {max} characters long.");
+    }
+
+    /// <summary>
+    /// Validates that the string matches the specified regular expression pattern.
+    /// </summary>
+    public static IRuleBuilder<T, string> Matches<T>(
+        this IRuleBuilder<T, string> builder, string pattern)
+    {
+        var regex = new Regex(pattern, RegexOptions.Compiled);
+        return builder.AddCheck(
+            value => value is not null && regex.IsMatch(value),
+            $"must match the pattern '{pattern}'.");
+    }
+
+    /// <summary>
+    /// Validates that the string matches the specified <see cref="Regex"/>.
+    /// </summary>
+    public static IRuleBuilder<T, string> Matches<T>(
+        this IRuleBuilder<T, string> builder, Regex regex)
+    {
+        return builder.AddCheck(
+            value => value is not null && regex.IsMatch(value),
+            "must match the required pattern.");
+    }
+
+    /// <summary>
+    /// Validates that the string is a valid email address format.
+    /// </summary>
+    public static IRuleBuilder<T, string> EmailAddress<T>(
+        this IRuleBuilder<T, string> builder)
+    {
+        return builder.AddCheck(
+            value => value is not null && EmailRegex().IsMatch(value),
+            "must be a valid email address.");
+    }
+
+    /// <summary>
+    /// Validates that the string is a valid phone number format.
+    /// Accepts digits, spaces, dashes, parentheses, and an optional leading '+'.
+    /// </summary>
+    public static IRuleBuilder<T, string> PhoneNumber<T>(
+        this IRuleBuilder<T, string> builder)
+    {
+        return builder.AddCheck(
+            value => value is not null && PhoneRegex().IsMatch(value),
+            "must be a valid phone number.");
+    }
+}
