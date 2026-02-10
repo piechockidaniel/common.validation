@@ -14,7 +14,7 @@ public abstract class AbstractValidator<T> : IValidator<T>
 {
     private readonly List<IValidationRule<T>> _rules = new();
     private static readonly string? CachedLayer = typeof(T)
-        .GetCustomAttribute<ValidationLayerAttribute>()?.Layer;
+        .GetCustomAttribute<ValidationLayerAttribute>(inherit: true)?.Layer;
 
     /// <summary>
     /// Gets or sets the cascade mode for this validator.

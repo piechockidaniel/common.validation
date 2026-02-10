@@ -104,6 +104,38 @@ public class LayerTests
         Assert.Equal("api", attr.Layer);
     }
 
+    // --- Inheritance scenario: attribute on base, child has no attribute ---
+
+    [ValidationLayer("api")]
+    private class ApiBaseModel
+    {
+        public string Name { get; set; } = string.Empty;
+    }
+
+    private class InheritedApiModel : ApiBaseModel { }
+
+    private class InheritedApiValidator : AbstractValidator<InheritedApiModel>
+    {
+        public InheritedApiValidator()
+        {
+            RuleFor(x => x.Name)
+                .NotEmpty().WithMessage("Name is required.")
+                .WithSeverity(Severity.AtOwnRisk)
+                .WithLayerSeverity("api", Severity.Forbidden);
+        }
+    }
+
+    [Fact]
+    public void InheritedLayer_ResolvesFromBaseClass()
+    {
+        // InheritedApiModel has no [ValidationLayer] itself, but inherits from ApiBaseModel which has [ValidationLayer("api")]
+        var validator = new InheritedApiValidator();
+        var result = validator.Validate(new InheritedApiModel { Name = "" });
+
+        Assert.False(result.IsValid);
+        Assert.Equal(Severity.Forbidden, result.Errors[0].Severity);
+    }
+
     private class NoLayerValidator : AbstractValidator<BaseModel>
     {
         public NoLayerValidator()

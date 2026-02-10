@@ -17,7 +17,7 @@ public class JsonValidator<T> : IValidator<T>
     private readonly IValidatorTypeRegistry _registry;
     private readonly List<CompiledPropertyRule> _compiledRules;
     private static readonly string? CachedLayer = typeof(T)
-        .GetCustomAttribute<ValidationLayerAttribute>()?.Layer;
+        .GetCustomAttribute<ValidationLayerAttribute>(inherit: true)?.Layer;
 
     /// <summary>
     /// Gets or sets the cascade mode for this validator.
