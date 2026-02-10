@@ -46,6 +46,16 @@ public interface IRuleBuilder<T, TProperty>
     IRuleBuilder<T, TProperty> SetSeverity(Core.Severity severity);
 
     /// <summary>
+    /// Sets a layer-specific severity override on the most recently added check.
+    /// When validation runs within a context that specifies this layer,
+    /// this severity will be used instead of the default.
+    /// </summary>
+    /// <param name="layer">The layer name (e.g. "api", "dto", "entity").</param>
+    /// <param name="severity">The severity level for this layer.</param>
+    /// <returns>The rule builder for fluent chaining.</returns>
+    IRuleBuilder<T, TProperty> SetLayerSeverity(string layer, Core.Severity severity);
+
+    /// <summary>
     /// Sets a condition under which all subsequent checks apply.
     /// </summary>
     /// <param name="condition">A predicate evaluated against the instance.</param>
@@ -58,4 +68,11 @@ public interface IRuleBuilder<T, TProperty>
     /// <param name="condition">A predicate evaluated against the instance. If <c>true</c>, checks are skipped.</param>
     /// <returns>The rule builder for fluent chaining.</returns>
     IRuleBuilder<T, TProperty> ApplyUnless(Func<T, bool> condition);
+
+    /// <summary>
+    /// Sets the cascade mode for this property rule.
+    /// </summary>
+    /// <param name="cascadeMode">The cascade mode to apply.</param>
+    /// <returns>The rule builder for fluent chaining.</returns>
+    IRuleBuilder<T, TProperty> SetCascadeMode(Core.CascadeMode cascadeMode);
 }

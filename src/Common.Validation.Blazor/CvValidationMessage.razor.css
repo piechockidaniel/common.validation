@@ -1,0 +1,23 @@
+.cv-validation-message {
+    font-size: 0.8125rem;
+    margin-top: 0.25rem;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+}
+
+.cv-validation-message.cv-forbidden {
+    color: #dc2626;
+}
+
+.cv-validation-message.cv-at-own-risk {
+    color: #d97706;
+}
+
+.cv-validation-message.cv-not-recommended {
+    color: #9ca3af;
+}
+
+.cv-message-text {
+    display: block;
+    line-height: 1.4;
+}

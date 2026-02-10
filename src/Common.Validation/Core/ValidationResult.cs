@@ -17,6 +17,11 @@ public class ValidationResult
     }
 
     /// <summary>
+    /// Creates a new empty (valid) <see cref="ValidationResult"/>.
+    /// </summary>
+    public ValidationResult() : this(Enumerable.Empty<ValidationFailure>()) { }
+
+    /// <summary>
     /// Gets a value indicating whether the validation was successful (no errors).
     /// </summary>
     public bool IsValid => _errors.Count == 0;
@@ -47,6 +52,36 @@ public class ValidationResult
     /// </summary>
     public IReadOnlyList<ValidationFailure> BySeverity(Severity severity)
         => _errors.Where(e => e.Severity == severity).ToList().AsReadOnly();
+
+    /// <summary>
+    /// Merges another <see cref="ValidationResult"/> into this one,
+    /// returning a new <see cref="ValidationResult"/> containing all failures from both.
+    /// </summary>
+    /// <param name="other">The other result to merge.</param>
+    /// <returns>A new <see cref="ValidationResult"/> with combined failures.</returns>
+    public ValidationResult Merge(ValidationResult other)
+    {
+        ArgumentNullException.ThrowIfNull(other);
+        var combined = new List<ValidationFailure>(_errors.Count + other._errors.Count);
+        combined.AddRange(_errors);
+        combined.AddRange(other._errors);
+        return new ValidationResult(combined);
+    }
+
+    /// <summary>
+    /// Combines multiple <see cref="ValidationResult"/> instances into a single result.
+    /// </summary>
+    /// <param name="results">The results to combine.</param>
+    /// <returns>A new <see cref="ValidationResult"/> with all failures from all results.</returns>
+    public static ValidationResult Combine(params ValidationResult[] results)
+    {
+        var combined = new List<ValidationFailure>();
+        foreach (var result in results)
+        {
+            combined.AddRange(result._errors);
+        }
+        return new ValidationResult(combined);
+    }
 
     /// <inheritdoc />
     public override string ToString()

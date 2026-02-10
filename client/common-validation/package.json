@@ -1,0 +1,37 @@
+{
+  "name": "common-validation",
+  "version": "0.1.0",
+  "description": "Client-side validation library consuming Common.Validation JSON definitions. Mirrors the C# validation engine for interoperable client/server validation.",
+  "license": "AGPL-3.0-or-later",
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./schema": "./schema/validation-definition.schema.json"
+  },
+  "files": [
+    "dist",
+    "schema"
+  ],
+  "scripts": {
+    "build": "tsup src/index.ts --format esm,cjs --dts --clean",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsup": "^8.0.0",
+    "typescript": "^5.7.0"
+  },
+  "keywords": [
+    "validation",
+    "json",
+    "interoperable",
+    "blazor",
+    "dotnet"
+  ]
+}

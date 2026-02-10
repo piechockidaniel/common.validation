@@ -1,0 +1,98 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://common-validation/schema/v1.json",
+  "title": "Common.Validation Definition",
+  "description": "JSON schema for Common.Validation rule definitions. Shared between C# and TypeScript validators.",
+  "type": "object",
+  "required": ["type", "properties"],
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "description": "Reference to this JSON Schema for editor support."
+    },
+    "type": {
+      "type": "string",
+      "description": "The type name this definition applies to."
+    },
+    "properties": {
+      "type": "object",
+      "description": "Property validation definitions keyed by property name.",
+      "additionalProperties": {
+        "$ref": "#/$defs/propertyDefinition"
+      }
+    }
+  },
+  "$defs": {
+    "propertyDefinition": {
+      "type": "object",
+      "required": ["rules"],
+      "properties": {
+        "rules": {
+          "type": "array",
+          "description": "List of validation rules for this property.",
+          "items": {
+            "$ref": "#/$defs/ruleDefinition"
+          }
+        }
+      }
+    },
+    "ruleDefinition": {
+      "type": "object",
+      "required": ["validator", "message"],
+      "properties": {
+        "validator": {
+          "type": "string",
+          "description": "The validator type name.",
+          "enum": [
+            "notNull",
+            "null",
+            "notEmpty",
+            "empty",
+            "maxLength",
+            "minLength",
+            "length",
+            "email",
+            "phone",
+            "matches",
+            "equal",
+            "notEqual",
+            "greaterThan",
+            "greaterThanOrEqual",
+            "lessThan",
+            "lessThanOrEqual",
+            "inclusiveBetween"
+          ]
+        },
+        "params": {
+          "type": "object",
+          "description": "Optional parameters for the validator.",
+          "additionalProperties": true
+        },
+        "message": {
+          "type": "string",
+          "description": "The error message to display when validation fails."
+        },
+        "errorCode": {
+          "type": "string",
+          "description": "Optional error code for programmatic handling."
+        },
+        "severity": {
+          "$ref": "#/$defs/severity",
+          "description": "Default severity level."
+        },
+        "layers": {
+          "type": "object",
+          "description": "Layer-specific severity overrides.",
+          "additionalProperties": {
+            "$ref": "#/$defs/severity"
+          }
+        }
+      }
+    },
+    "severity": {
+      "type": "string",
+      "enum": ["forbidden", "atOwnRisk", "notRecommended"],
+      "description": "Validation severity level."
+    }
+  }
+}

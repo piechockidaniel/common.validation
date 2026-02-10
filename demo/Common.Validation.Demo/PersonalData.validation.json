@@ -1,0 +1,99 @@
+{
+  "$schema": "https://common-validation/schema/v1.json",
+  "type": "PersonalData",
+  "properties": {
+    "firstName": {
+      "rules": [
+        {
+          "validator": "notEmpty",
+          "message": "First name is required.",
+          "severity": "forbidden",
+          "layers": {
+            "api": "forbidden",
+            "entity": "notRecommended"
+          }
+        },
+        {
+          "validator": "maxLength",
+          "params": { "max": 100 },
+          "message": "First name must not exceed 100 characters."
+        }
+      ]
+    },
+    "lastName": {
+      "rules": [
+        {
+          "validator": "notEmpty",
+          "message": "Last name is required.",
+          "severity": "forbidden"
+        }
+      ]
+    },
+    "email": {
+      "rules": [
+        {
+          "validator": "notEmpty",
+          "message": "Email is required.",
+          "severity": "forbidden",
+          "layers": {
+            "api": "forbidden",
+            "entity": "atOwnRisk"
+          }
+        },
+        {
+          "validator": "email",
+          "message": "Invalid email format.",
+          "severity": "forbidden"
+        }
+      ]
+    },
+    "phone": {
+      "rules": [
+        {
+          "validator": "notEmpty",
+          "message": "Phone number is recommended.",
+          "severity": "atOwnRisk",
+          "layers": {
+            "api": "atOwnRisk",
+            "entity": "notRecommended"
+          }
+        },
+        {
+          "validator": "phone",
+          "message": "Invalid phone number format.",
+          "severity": "atOwnRisk"
+        }
+      ]
+    },
+    "citizenship": {
+      "rules": [
+        {
+          "validator": "notEmpty",
+          "message": "Citizenship is required.",
+          "severity": "forbidden"
+        },
+        {
+          "validator": "length",
+          "params": { "min": 2, "max": 3 },
+          "message": "Citizenship must be a 2- or 3-letter ISO 3166 country code.",
+          "severity": "forbidden"
+        }
+      ]
+    },
+    "taxResidency": {
+      "rules": [
+        {
+          "validator": "notEmpty",
+          "message": "Tax residency is recommended for full compliance.",
+          "severity": "notRecommended"
+        },
+        {
+          "validator": "length",
+          "params": { "min": 2, "max": 3 },
+          "message": "Tax residency should be a 2- or 3-letter ISO 3166 country code.",
+          "severity": "notRecommended"
+        }
+      ]
+    }
+  }
+}

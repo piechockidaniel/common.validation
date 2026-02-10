@@ -14,4 +14,12 @@ public interface IValidationRule<in T>
     /// <param name="instance">The object to validate.</param>
     /// <returns>A collection of validation failures. Empty if valid.</returns>
     IEnumerable<ValidationFailure> Validate(T instance);
+
+    /// <summary>
+    /// Validates the specified instance within a validation context and returns any failures.
+    /// </summary>
+    /// <param name="instance">The object to validate.</param>
+    /// <param name="context">The validation context carrying layer and custom data.</param>
+    /// <returns>A collection of validation failures. Empty if valid.</returns>
+    IEnumerable<ValidationFailure> Validate(T instance, IValidationContext context);
 }

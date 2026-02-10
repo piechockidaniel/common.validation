@@ -1,13 +1,21 @@
 using Common.Validation.Core;
 using Common.Validation.Demo.Models;
 using Common.Validation.Demo.Validators;
+using Common.Validation.DependencyInjection;
+using Common.Validation.Json;
+using Microsoft.Extensions.DependencyInjection;
 
 Console.WriteLine("=== Common.Validation Demo ===");
 Console.WriteLine();
 
+// ─────────────────────────────────────────────
+// Part 1: Fluent validation (original demo)
+// ─────────────────────────────────────────────
+Console.WriteLine("═══ Part 1: Fluent Validation ═══");
+Console.WriteLine();
+
 var validator = new PersonalDataValidator();
 
-// --- Scenario 1: Valid data ---
 Console.WriteLine("--- Scenario 1: Valid personal data ---");
 var validPerson = new PersonalData
 {
@@ -18,49 +26,96 @@ var validPerson = new PersonalData
     Citizenship = "PL",
     TaxResidency = "PL"
 };
+PrintResult(validator.Validate(validPerson));
 
-var result1 = validator.Validate(validPerson);
-PrintResult(result1);
-
-// --- Scenario 2: Completely empty data (mixed severities) ---
 Console.WriteLine("--- Scenario 2: All fields empty (shows severity levels) ---");
-var emptyPerson = new PersonalData();
+PrintResult(validator.Validate(new PersonalData()));
 
-var result2 = validator.Validate(emptyPerson);
-PrintResult(result2);
-
-// --- Scenario 3: Missing only optional / advisory fields ---
 Console.WriteLine("--- Scenario 3: Missing phone and tax residency (no Forbidden errors) ---");
-var partialPerson = new PersonalData
+PrintResult(validator.Validate(new PersonalData
 {
     FirstName = "Anna",
     LastName = "Nowak",
     Email = "anna.nowak@example.com",
-    Phone = "",          // AtOwnRisk
+    Phone = "",
     Citizenship = "DE",
-    TaxResidency = ""   // NotRecommended
-};
+    TaxResidency = ""
+}));
 
-var result3 = validator.Validate(partialPerson);
-PrintResult(result3);
+// ─────────────────────────────────────────────
+// Part 2: Multi-layer severity via attributes
+// ─────────────────────────────────────────────
+Console.WriteLine("═══ Part 2: Multi-Layer Severity ═══");
+Console.WriteLine();
 
-// --- Scenario 4: Invalid email and bad country codes ---
-Console.WriteLine("--- Scenario 4: Invalid email and country codes ---");
-var badDataPerson = new PersonalData
+var apiValidator = new PersonalDataApiValidator();
+var entityValidator = new PersonalDataEntityValidator();
+
+var emptyApiModel = new PersonalDataApiModel();
+var emptyEntityModel = new PersonalDataEntity();
+
+Console.WriteLine("--- API layer: empty model (stricter severity) ---");
+PrintResult(apiValidator.Validate(emptyApiModel));
+
+Console.WriteLine("--- Entity layer: empty model (relaxed severity) ---");
+PrintResult(entityValidator.Validate(emptyEntityModel));
+
+// ─────────────────────────────────────────────
+// Part 3: JSON-based validation
+// ─────────────────────────────────────────────
+Console.WriteLine("═══ Part 3: JSON-Based Validation ═══");
+Console.WriteLine();
+
+var jsonPath = Path.Combine(AppContext.BaseDirectory, "PersonalData.validation.json");
+if (File.Exists(jsonPath))
 {
-    FirstName = "Maria",
-    LastName = "Garcia",
-    Email = "not-an-email",
-    Phone = "+34 600 123 456",
-    Citizenship = "SPAIN",
-    TaxResidency = "PORTUGAL"
-};
+    var loader = new JsonValidationDefinitionLoader();
+    var definition = loader.LoadFromFile(jsonPath);
+    var jsonValidator = new JsonValidator<PersonalData>(definition);
 
-var result4 = validator.Validate(badDataPerson);
-PrintResult(result4);
+    Console.WriteLine("--- JSON validator: valid data ---");
+    PrintResult(jsonValidator.Validate(validPerson));
 
+    Console.WriteLine("--- JSON validator: empty data ---");
+    PrintResult(jsonValidator.Validate(new PersonalData()));
+
+    Console.WriteLine("--- JSON validator: empty data with 'entity' layer context ---");
+    var entityContext = ValidationContext.ForLayer("entity");
+    PrintResult(jsonValidator.Validate(new PersonalData(), entityContext));
+}
+else
+{
+    Console.ForegroundColor = ConsoleColor.Yellow;
+    Console.WriteLine($"  JSON file not found at: {jsonPath}");
+    Console.ResetColor();
+}
+
+// ─────────────────────────────────────────────
+// Part 4: IoC / Dependency Injection
+// ─────────────────────────────────────────────
+Console.WriteLine("═══ Part 4: Dependency Injection ═══");
+Console.WriteLine();
+
+var services = new ServiceCollection();
+services.AddCommonValidation();
+services.AddValidatorsFromAssemblyContaining<PersonalDataValidator>();
+
+var provider = services.BuildServiceProvider();
+var factory = provider.GetRequiredService<IValidatorFactory>();
+
+var resolvedValidator = factory.GetValidator<PersonalData>();
+if (resolvedValidator is not null)
+{
+    Console.WriteLine("--- Resolved PersonalDataValidator via DI ---");
+    PrintResult(resolvedValidator.Validate(validPerson));
+}
+
+Console.WriteLine();
 Console.WriteLine("=== Demo complete ===");
 
+// ─────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────
 static void PrintResult(ValidationResult result)
 {
     if (result.IsValid)
@@ -72,12 +127,10 @@ static void PrintResult(ValidationResult result)
         return;
     }
 
-    // Summary line
     Console.ForegroundColor = result.HasForbidden ? ConsoleColor.Red : ConsoleColor.Yellow;
     Console.WriteLine($"  {(result.HasForbidden ? "BLOCKED" : "PASSED WITH WARNINGS")} - {result.Errors.Count} issue(s):");
     Console.ResetColor();
 
-    // Print grouped by severity
     PrintSeverityGroup(result, Severity.Forbidden, ConsoleColor.Red);
     PrintSeverityGroup(result, Severity.AtOwnRisk, ConsoleColor.Yellow);
     PrintSeverityGroup(result, Severity.NotRecommended, ConsoleColor.DarkGray);

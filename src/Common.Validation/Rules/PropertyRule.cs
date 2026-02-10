@@ -14,6 +14,7 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
     private readonly string _propertyName;
     private readonly List<CheckDescriptor> _checks = new();
     private Func<T, bool>? _currentCondition;
+    private CascadeMode _cascadeMode = CascadeMode.Continue;
 
     /// <summary>
     /// Creates a new <see cref="PropertyRule{T, TProperty}"/> from a property expression.
@@ -56,10 +57,21 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
         return this;
     }
 
-    public IRuleBuilder<T, TProperty> SetSeverity(Core.Severity severity)
+    public IRuleBuilder<T, TProperty> SetSeverity(Severity severity)
     {
         if (_checks.Count > 0)
             _checks[^1].Severity = severity;
+        return this;
+    }
+
+    public IRuleBuilder<T, TProperty> SetLayerSeverity(string layer, Severity severity)
+    {
+        if (_checks.Count > 0)
+        {
+            var check = _checks[^1];
+            check.LayerSeverities ??= new Dictionary<string, Severity>(StringComparer.OrdinalIgnoreCase);
+            check.LayerSeverities[layer] = severity;
+        }
         return this;
     }
 
@@ -75,11 +87,23 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
         return this;
     }
 
+    public IRuleBuilder<T, TProperty> SetCascadeMode(CascadeMode cascadeMode)
+    {
+        _cascadeMode = cascadeMode;
+        return this;
+    }
+
     #endregion
 
     #region IValidationRule<T>
 
     public IEnumerable<ValidationFailure> Validate(T instance)
+        => ValidateInternal(instance, layer: null);
+
+    public IEnumerable<ValidationFailure> Validate(T instance, IValidationContext context)
+        => ValidateInternal(instance, context.Layer);
+
+    private IEnumerable<ValidationFailure> ValidateInternal(T instance, string? layer)
     {
         var value = _propertyAccessor(instance);
 
@@ -91,12 +115,17 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
 
             if (!check.Predicate(instance, value))
             {
+                var severity = ResolveSeverity(check, layer);
+
                 var failure = new ValidationFailure(_propertyName, check.ErrorMessage, value)
                 {
                     ErrorCode = check.ErrorCode,
-                    Severity = check.Severity
+                    Severity = severity
                 };
                 yield return failure;
+
+                if (_cascadeMode == CascadeMode.StopOnFirstFailure)
+                    yield break;
             }
         }
     }
@@ -104,6 +133,18 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
     #endregion
 
     #region Helpers
+
+    private static Severity ResolveSeverity(CheckDescriptor check, string? layer)
+    {
+        if (layer is not null
+            && check.LayerSeverities is not null
+            && check.LayerSeverities.TryGetValue(layer, out var layerSeverity))
+        {
+            return layerSeverity;
+        }
+
+        return check.Severity;
+    }
 
     private static string GetPropertyName(Expression<Func<T, TProperty>> expression)
     {
@@ -128,7 +169,8 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
         public Func<T, TProperty, bool> Predicate { get; }
         public string ErrorMessage { get; set; }
         public string? ErrorCode { get; set; }
-        public Core.Severity Severity { get; set; } = Core.Severity.Forbidden;
+        public Severity Severity { get; set; } = Severity.Forbidden;
+        public Dictionary<string, Severity>? LayerSeverities { get; set; }
         public Func<T, bool>? Condition { get; }
 
         public CheckDescriptor(Func<T, TProperty, bool> predicate, string errorMessage, Func<T, bool>? condition)
