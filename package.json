@@ -6,7 +6,7 @@
   "bugs": {
     "url": "https://github.com/piechockidaniel/common.validation/issues"
   },
-  "repository": {
+  "repository": { 
     "type": "git",
     "url": "git+https://github.com/piechockidaniel/common.validation.git"
   },
