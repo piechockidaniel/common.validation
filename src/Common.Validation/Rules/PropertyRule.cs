@@ -23,23 +23,23 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
     public PropertyRule(Expression<Func<T, TProperty>> expression)
     {
         _propertyAccessor = expression.Compile();
-        _propertyName = GetPropertyName(expression);
+        _propertyName = GetPropertyName(expression: expression);
     }
 
     #region IRuleBuilder<T, TProperty>
 
     public IRuleBuilder<T, TProperty> AddCheck(Func<TProperty, bool> predicate, string defaultMessage)
     {
-        _checks.Add(new CheckDescriptor(
-            (_, val) => predicate(val),
-            defaultMessage,
-            _currentCondition));
+        _checks.Add(item: new CheckDescriptor(
+            predicate: (_, val) => predicate(arg: val),
+            errorMessage: defaultMessage,
+            condition: _currentCondition));
         return this;
     }
 
     public IRuleBuilder<T, TProperty> AddCheck(Func<T, TProperty, bool> predicate, string defaultMessage)
     {
-        _checks.Add(new CheckDescriptor(predicate, defaultMessage, _currentCondition));
+        _checks.Add(item: new CheckDescriptor(predicate: predicate, errorMessage: defaultMessage, condition: _currentCondition));
         return this;
     }
 
@@ -69,8 +69,8 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
         if (_checks.Count > 0)
         {
             var check = _checks[^1];
-            check.LayerSeverities ??= new Dictionary<string, Severity>(StringComparer.OrdinalIgnoreCase);
-            check.LayerSeverities[layer] = severity;
+            check.LayerSeverities ??= new Dictionary<string, Severity>(comparer: StringComparer.OrdinalIgnoreCase);
+            check.LayerSeverities[key: layer] = severity;
         }
         return this;
     }
@@ -83,7 +83,7 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
 
     public IRuleBuilder<T, TProperty> ApplyUnless(Func<T, bool> condition)
     {
-        _currentCondition = instance => !condition(instance);
+        _currentCondition = instance => !condition(arg: instance);
         return this;
     }
 
@@ -97,27 +97,30 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
 
     #region IValidationRule<T>
 
+    /// <inheritdoc />
+    public string PropertyName => _propertyName;
+
     public IEnumerable<ValidationFailure> Validate(T instance)
-        => ValidateInternal(instance, layer: null);
+        => ValidateInternal(instance: instance, layer: null);
 
     public IEnumerable<ValidationFailure> Validate(T instance, IValidationContext context)
-        => ValidateInternal(instance, context.Layer);
+        => ValidateInternal(instance: instance, layer: context.Layer);
 
     private IEnumerable<ValidationFailure> ValidateInternal(T instance, string? layer)
     {
-        var value = _propertyAccessor(instance);
+        var value = _propertyAccessor(arg: instance);
 
         foreach (var check in _checks)
         {
             // Skip check if a condition is set and evaluates to false
-            if (check.Condition is not null && !check.Condition(instance))
+            if (check.Condition is not null && !check.Condition(arg: instance))
                 continue;
 
-            if (!check.Predicate(instance, value))
+            if (!check.Predicate(arg1: instance, arg2: value))
             {
-                var severity = ResolveSeverity(check, layer);
+                var severity = ResolveSeverity(check: check, layer: layer);
 
-                var failure = new ValidationFailure(_propertyName, check.ErrorMessage, value)
+                var failure = new ValidationFailure(propertyName: _propertyName, errorMessage: check.ErrorMessage, attemptedValue: value)
                 {
                     ErrorCode = check.ErrorCode,
                     Severity = severity
@@ -138,7 +141,7 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
     {
         if (layer is not null
             && check.LayerSeverities is not null
-            && check.LayerSeverities.TryGetValue(layer, out var layerSeverity))
+            && check.LayerSeverities.TryGetValue(key: layer, value: out var layerSeverity))
         {
             return layerSeverity;
         }

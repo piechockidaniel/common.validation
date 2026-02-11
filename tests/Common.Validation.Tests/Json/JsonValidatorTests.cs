@@ -1,4 +1,5 @@
 using Common.Validation.Core;
+using Common.Validation.Extensions;
 using Common.Validation.Json;
 
 namespace Common.Validation.Tests.Json;
@@ -60,50 +61,50 @@ public class JsonValidatorTests
     public void JsonValidator_ValidModel_ReturnsSuccess()
     {
         var definition = TestJson.Load();
-        var validator = new JsonValidator<TestModel>(definition);
+        var validator = new JsonValidator<TestModel>(definition: definition);
 
-        var result = validator.Validate(new TestModel
+        var result = validator.Validate(instance: new TestModel
         {
             FirstName = "Alice",
             Email = "alice@example.com",
             Age = 25
         });
 
-        Assert.True(result.IsValid);
+        Assert.True(condition: result.IsValid);
     }
 
     [Fact]
     public void JsonValidator_InvalidModel_ReturnsFailures()
     {
         var definition = TestJson.Load();
-        var validator = new JsonValidator<TestModel>(definition);
+        var validator = new JsonValidator<TestModel>(definition: definition);
 
-        var result = validator.Validate(new TestModel
+        var result = validator.Validate(instance: new TestModel
         {
             FirstName = "",
             Email = "not-email",
             Age = 0
         });
 
-        Assert.False(result.IsValid);
-        Assert.Equal(3, result.Errors.Count);
+        Assert.False(condition: result.IsValid);
+        Assert.Equal(expected: 3, actual: result.Errors.Count);
     }
 
     [Fact]
     public void JsonValidator_RespectsSeverity()
     {
         var definition = TestJson.Load();
-        var validator = new JsonValidator<TestModel>(definition);
+        var validator = new JsonValidator<TestModel>(definition: definition);
 
-        var result = validator.Validate(new TestModel
+        var result = validator.Validate(instance: new TestModel
         {
             FirstName = "",
             Email = "valid@test.com",
             Age = 25
         });
 
-        Assert.Single(result.Errors);
-        Assert.Equal(Severity.Forbidden, result.Errors[0].Severity);
+        Assert.Single(collection: result.Errors);
+        Assert.Equal(expected: Severity.Forbidden, actual: result.Errors[index: 0].Severity);
     }
 
     [Fact]
@@ -111,13 +112,13 @@ public class JsonValidatorTests
     {
 
         var definition = TestJson.Load();
-        var validator = new JsonValidator<TestModel>(definition);
+        var validator = new JsonValidator<TestModel>(definition: definition);
 
-        var context = ValidationContext.ForLayer("api");
-        var result = validator.Validate(new TestModel { FirstName = "", Email = "a@b.c", Age = 1 }, context);
+        var context = ValidationContext.ForLayer(layer: "api");
+        var result = validator.Validate(instance: new TestModel { FirstName = "", Email = "a@b.c", Age = 1 }, context: context);
 
-        Assert.Single(result.Errors);
-        Assert.Equal(Severity.Forbidden, result.Errors[0].Severity);
+        Assert.Single(collection: result.Errors);
+        Assert.Equal(expected: Severity.Forbidden, actual: result.Errors[index: 0].Severity);
     }
 
     [Fact]
@@ -125,13 +126,13 @@ public class JsonValidatorTests
     {
 
         var definition = TestJson.Load();
-        var validator = new JsonValidator<TestModel>(definition);
+        var validator = new JsonValidator<TestModel>(definition: definition);
 
-        var context = ValidationContext.ForLayer("entity");
-        var result = validator.Validate(new TestModel { FirstName = "", Email = "a@b.c", Age = 1 }, context);
+        var context = ValidationContext.ForLayer(layer: "entity");
+        var result = validator.Validate(instance: new TestModel { FirstName = "", Email = "a@b.c", Age = 1 }, context: context);
 
-        Assert.Single(result.Errors);
-        Assert.Equal(Severity.NotRecommended, result.Errors[0].Severity);
+        Assert.Single(collection: result.Errors);
+        Assert.Equal(expected: Severity.NotRecommended, actual: result.Errors[index: 0].Severity);
     }
 
     [Fact]
@@ -140,11 +141,11 @@ public class JsonValidatorTests
 
         var definition = TestJson.Load();
 
-        Assert.Equal("TestModel", definition.Type);
-        Assert.Equal(3, definition.Properties?.Count);
-        Assert.True(definition.Properties?.ContainsKey("firstName"));
-        Assert.True(definition.Properties?.ContainsKey("email"));
-        Assert.True(definition.Properties?.ContainsKey("age"));
+        Assert.Equal(expected: "TestModel", actual: definition.Type);
+        Assert.Equal(expected: 3, actual: definition.Properties?.Count);
+        Assert.True(condition: definition.Properties?.ContainsKey(key: "firstName"));
+        Assert.True(condition: definition.Properties?.ContainsKey(key: "email"));
+        Assert.True(condition: definition.Properties?.ContainsKey(key: "age"));
     }
 
     [Fact]
@@ -152,17 +153,17 @@ public class JsonValidatorTests
     {
 
         var definition = TestJson.Load();
-        var validator = new JsonValidator<TestModel>(definition);
+        var validator = new JsonValidator<TestModel>(definition: definition);
 
-        var result = validator.Validate(new TestModel
+        var result = validator.Validate(instance: new TestModel
         {
-            FirstName = new string('A', 51),
+            FirstName = new string(c: 'A', count: 51),
             Email = "a@b.c",
             Age = 1
         });
 
-        Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => string.Equals(e.ErrorMessage, "First name too long.", StringComparison.InvariantCultureIgnoreCase));
+        Assert.False(condition: result.IsValid);
+        Assert.Contains(collection: result.Errors, filter: e => string.Equals(a: e.ErrorMessage, b: "First name too long.", comparisonType: StringComparison.InvariantCultureIgnoreCase));
     }
 
     [Fact]
@@ -182,7 +183,7 @@ public class JsonValidatorTests
         """;
 
         var definition = json.Load();
-        Assert.Throws<InvalidOperationException>(() => new JsonValidator<TestModel>(definition));
+        Assert.Throws<InvalidOperationException>(testCode: () => new JsonValidator<TestModel>(definition: definition));
     }
 
     [Fact]
@@ -204,6 +205,61 @@ public class JsonValidatorTests
 
         var definition = json.Load();
 
-        Assert.Throws<InvalidOperationException>(() => new JsonValidator<TestModel>(definition));
+        Assert.Throws<InvalidOperationException>(testCode: () => new JsonValidator<TestModel>(definition: definition));
+    }
+
+    [Fact]
+    public void JsonValidator_ValidateProperty_ValidProperty_ReturnsSuccess()
+    {
+        var definition = TestJson.Load();
+        var validator = new JsonValidator<TestModel>(definition: definition);
+        var model = new TestModel { FirstName = "Alice", Email = "not-email", Age = 0 }; // Email and Age invalid
+
+        var result = validator.ValidateProperty(instance: model, propertyExpression: x => x.FirstName);
+
+        Assert.True(condition: result.IsValid);
+        Assert.Empty(collection: result.Errors);
+    }
+
+    [Fact]
+    public void JsonValidator_ValidateProperty_InvalidProperty_ReturnsOnlyThatPropertyFailures()
+    {
+        var definition = TestJson.Load();
+        var validator = new JsonValidator<TestModel>(definition: definition);
+        var model = new TestModel { FirstName = "", Email = "alice@example.com", Age = 25 };
+
+        var result = validator.ValidateProperty(instance: model, propertyExpression: x => x.FirstName);
+
+        Assert.False(condition: result.IsValid);
+        Assert.Single(collection: result.Errors);
+        Assert.Equal(expected: "FirstName", actual: result.Errors[index: 0].PropertyName);
+    }
+
+    [Fact]
+    public void JsonValidator_ValidateProperty_DoesNotValidateOtherProperties()
+    {
+        var definition = TestJson.Load();
+        var validator = new JsonValidator<TestModel>(definition: definition);
+        var model = new TestModel { FirstName = "Alice", Email = "invalid", Age = 25 }; // Email invalid
+
+        var result = validator.ValidateProperty(instance: model, propertyExpression: x => x.FirstName);
+
+        Assert.True(condition: result.IsValid);
+        Assert.Empty(collection: result.Errors);
+    }
+
+    [Fact]
+    public void JsonValidator_ValidateProperty_WithContext_RespectsLayer()
+    {
+        var definition = TestJson.Load();
+        var validator = new JsonValidator<TestModel>(definition: definition);
+        var model = new TestModel { FirstName = "", Email = "a@b.c", Age = 1 };
+        var context = ValidationContext.ForLayer(layer: "entity");
+
+        var result = validator.ValidateProperty(instance: model, propertyExpression: x => x.FirstName, context: context);
+
+        Assert.False(condition: result.IsValid);
+        Assert.Single(collection: result.Errors);
+        Assert.Equal(expected: Severity.NotRecommended, actual: result.Errors[index: 0].Severity);
     }
 }

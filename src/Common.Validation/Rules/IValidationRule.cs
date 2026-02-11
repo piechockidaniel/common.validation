@@ -9,6 +9,11 @@ namespace Common.Validation.Rules;
 public interface IValidationRule<in T>
 {
     /// <summary>
+    /// Gets the property name this rule validates, or <c>null</c> if the rule applies to the whole object.
+    /// </summary>
+    string? PropertyName { get; }
+
+    /// <summary>
     /// Validates the specified instance and returns any failures.
     /// </summary>
     /// <param name="instance">The object to validate.</param>

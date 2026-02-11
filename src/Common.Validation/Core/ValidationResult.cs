@@ -13,13 +13,13 @@ public class ValidationResult
     /// <param name="errors">The collection of validation failures.</param>
     public ValidationResult(IEnumerable<ValidationFailure> errors)
     {
-        _errors = new List<ValidationFailure>(errors);
+        _errors = new List<ValidationFailure>(collection: errors);
     }
 
     /// <summary>
     /// Creates a new empty (valid) <see cref="ValidationResult"/>.
     /// </summary>
-    public ValidationResult() : this([]) { }
+    public ValidationResult() : this(errors: []) { }
 
     /// <summary>
     /// Gets a value indicating whether the validation was successful (no errors).
@@ -35,23 +35,23 @@ public class ValidationResult
     /// Gets whether there are any <see cref="Severity.Forbidden"/> failures.
     /// When <c>true</c>, the operation must not proceed.
     /// </summary>
-    public bool HasForbidden => _errors.Exists(e => e.Severity == Severity.Forbidden);
+    public bool HasForbidden => _errors.Exists(match: e => e.Severity == Severity.Forbidden);
 
     /// <summary>
     /// Gets whether there are any <see cref="Severity.AtOwnRisk"/> failures.
     /// </summary>
-    public bool HasAtOwnRisk => _errors.Exists(e => e.Severity == Severity.AtOwnRisk);
+    public bool HasAtOwnRisk => _errors.Exists(match: e => e.Severity == Severity.AtOwnRisk);
 
     /// <summary>
     /// Gets whether there are any <see cref="Severity.NotRecommended"/> failures.
     /// </summary>
-    public bool HasNotRecommended => _errors.Exists(e => e.Severity == Severity.NotRecommended);
+    public bool HasNotRecommended => _errors.Exists(match: e => e.Severity == Severity.NotRecommended);
 
     /// <summary>
     /// Returns only failures of the specified severity.
     /// </summary>
     public IReadOnlyList<ValidationFailure> BySeverity(Severity severity)
-        => _errors.Where(e => e.Severity == severity).ToList().AsReadOnly();
+        => _errors.Where(predicate: e => e.Severity == severity).ToList().AsReadOnly();
 
     /// <summary>
     /// Merges another <see cref="ValidationResult"/> into this one,
@@ -61,11 +61,11 @@ public class ValidationResult
     /// <returns>A new <see cref="ValidationResult"/> with combined failures.</returns>
     public ValidationResult Merge(ValidationResult other)
     {
-        ArgumentNullException.ThrowIfNull(other);
-        var combined = new List<ValidationFailure>(_errors.Count + other._errors.Count);
-        combined.AddRange(_errors);
-        combined.AddRange(other._errors);
-        return new ValidationResult(combined);
+        ArgumentNullException.ThrowIfNull(argument: other);
+        var combined = new List<ValidationFailure>(capacity: _errors.Count + other._errors.Count);
+        combined.AddRange(collection: _errors);
+        combined.AddRange(collection: other._errors);
+        return new ValidationResult(errors: combined);
     }
 
     /// <summary>
@@ -78,9 +78,9 @@ public class ValidationResult
         var combined = new List<ValidationFailure>();
         foreach (var result in results)
         {
-            combined.AddRange(result._errors);
+            combined.AddRange(collection: result._errors);
         }
-        return new ValidationResult(combined);
+        return new ValidationResult(errors: combined);
     }
 
     /// <inheritdoc />
@@ -90,6 +90,6 @@ public class ValidationResult
             return "Validation succeeded.";
 
         return $"Validation failed with {_errors.Count} error(s):{Environment.NewLine}" +
-               string.Join(Environment.NewLine, _errors.Select(e => $"  - {e}"));
+               string.Join(separator: Environment.NewLine, values: _errors.Select(selector: e => $"  - {e}"));
     }
 }

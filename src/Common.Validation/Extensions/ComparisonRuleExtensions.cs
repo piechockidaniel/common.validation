@@ -15,8 +15,8 @@ public static class ComparisonRuleExtensions
         where TProperty : IComparable<TProperty>
     {
         return builder.AddCheck(
-            value => value is not null && value.CompareTo(threshold) > 0,
-            $"must be greater than {threshold}.");
+            predicate: value => value is not null && value.CompareTo(other: threshold) > 0,
+            defaultMessage: $"must be greater than {threshold}.");
     }
 
     /// <summary>
@@ -27,8 +27,8 @@ public static class ComparisonRuleExtensions
         where TProperty : IComparable<TProperty>
     {
         return builder.AddCheck(
-            value => value is not null && value.CompareTo(threshold) >= 0,
-            $"must be greater than or equal to {threshold}.");
+            predicate: value => value is not null && value.CompareTo(other: threshold) >= 0,
+            defaultMessage: $"must be greater than or equal to {threshold}.");
     }
 
     /// <summary>
@@ -39,8 +39,8 @@ public static class ComparisonRuleExtensions
         where TProperty : IComparable<TProperty>
     {
         return builder.AddCheck(
-            value => value is not null && value.CompareTo(threshold) < 0,
-            $"must be less than {threshold}.");
+            predicate: value => value is not null && value.CompareTo(other: threshold) < 0,
+            defaultMessage: $"must be less than {threshold}.");
     }
 
     /// <summary>
@@ -51,8 +51,8 @@ public static class ComparisonRuleExtensions
         where TProperty : IComparable<TProperty>
     {
         return builder.AddCheck(
-            value => value is not null && value.CompareTo(threshold) <= 0,
-            $"must be less than or equal to {threshold}.");
+            predicate: value => value is not null && value.CompareTo(other: threshold) <= 0,
+            defaultMessage: $"must be less than or equal to {threshold}.");
     }
 
     /// <summary>
@@ -63,7 +63,7 @@ public static class ComparisonRuleExtensions
         where TProperty : IComparable<TProperty>
     {
         return builder.AddCheck(
-            value => value is not null && value.CompareTo(from) >= 0 && value.CompareTo(to) <= 0,
-            $"must be between {from} and {to} (inclusive).");
+            predicate: value => value is not null && value.CompareTo(other: from) >= 0 && value.CompareTo(other: to) <= 0,
+            defaultMessage: $"must be between {from} and {to} (inclusive).");
     }
 }

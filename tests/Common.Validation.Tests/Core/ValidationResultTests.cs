@@ -8,116 +8,122 @@ public class ValidationResultTests
     public void EmptyResult_IsValid()
     {
         var result = new ValidationResult();
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
+        Assert.True(condition: result.IsValid);
+        Assert.Empty(collection: result.Errors);
     }
 
     [Fact]
     public void ResultWithErrors_IsNotValid()
     {
-        var result = new ValidationResult([
-            new ValidationFailure("Name", "Required")
+        var result = new ValidationResult(errors:
+        [
+            new ValidationFailure(propertyName: "Name", errorMessage: "Required")
         ]);
 
-        Assert.False(result.IsValid);
-        Assert.Single(result.Errors);
+        Assert.False(condition: result.IsValid);
+        Assert.Single(collection: result.Errors);
     }
 
     [Fact]
     public void HasForbidden_ReturnsTrue_WhenForbiddenErrorsExist()
     {
-        var result = new ValidationResult([
-            new ValidationFailure("Name", "Required") { Severity = Severity.Forbidden }
+        var result = new ValidationResult(errors:
+        [
+            new ValidationFailure(propertyName: "Name", errorMessage: "Required") { Severity = Severity.Forbidden }
         ]);
 
-        Assert.True(result.HasForbidden);
-        Assert.False(result.HasAtOwnRisk);
-        Assert.False(result.HasNotRecommended);
+        Assert.True(condition: result.HasForbidden);
+        Assert.False(condition: result.HasAtOwnRisk);
+        Assert.False(condition: result.HasNotRecommended);
     }
 
     [Fact]
     public void HasAtOwnRisk_ReturnsTrue_WhenAtOwnRiskErrorsExist()
     {
-        var result = new ValidationResult([
-            new ValidationFailure("Phone", "Recommended") { Severity = Severity.AtOwnRisk }
+        var result = new ValidationResult(errors:
+        [
+            new ValidationFailure(propertyName: "Phone", errorMessage: "Recommended") { Severity = Severity.AtOwnRisk }
         ]);
 
-        Assert.False(result.HasForbidden);
-        Assert.True(result.HasAtOwnRisk);
+        Assert.False(condition: result.HasForbidden);
+        Assert.True(condition: result.HasAtOwnRisk);
     }
 
     [Fact]
     public void HasNotRecommended_ReturnsTrue_WhenNotRecommendedErrorsExist()
     {
-        var result = new ValidationResult([
-            new ValidationFailure("Tax", "Nice to have") { Severity = Severity.NotRecommended }
+        var result = new ValidationResult(errors:
+        [
+            new ValidationFailure(propertyName: "Tax", errorMessage: "Nice to have") { Severity = Severity.NotRecommended }
         ]);
 
-        Assert.True(result.HasNotRecommended);
+        Assert.True(condition: result.HasNotRecommended);
     }
 
     [Fact]
     public void BySeverity_FiltersCorrectly()
     {
-        var result = new ValidationResult([
-            new ValidationFailure("A", "err") { Severity = Severity.Forbidden },
-            new ValidationFailure("B", "warn") { Severity = Severity.AtOwnRisk },
-            new ValidationFailure("C", "info") { Severity = Severity.NotRecommended },
-            new ValidationFailure("D", "err2") { Severity = Severity.Forbidden }
+        var result = new ValidationResult(errors:
+        [
+            new ValidationFailure(propertyName: "A", errorMessage: "err") { Severity = Severity.Forbidden },
+            new ValidationFailure(propertyName: "B", errorMessage: "warn") { Severity = Severity.AtOwnRisk },
+            new ValidationFailure(propertyName: "C", errorMessage: "info") { Severity = Severity.NotRecommended },
+            new ValidationFailure(propertyName: "D", errorMessage: "err2") { Severity = Severity.Forbidden }
         ]);
 
-        Assert.Equal(2, result.BySeverity(Severity.Forbidden).Count);
-        Assert.Single(result.BySeverity(Severity.AtOwnRisk));
-        Assert.Single(result.BySeverity(Severity.NotRecommended));
+        Assert.Equal(expected: 2, actual: result.BySeverity(severity: Severity.Forbidden).Count);
+        Assert.Single(collection: result.BySeverity(severity: Severity.AtOwnRisk));
+        Assert.Single(collection: result.BySeverity(severity: Severity.NotRecommended));
     }
 
     [Fact]
     public void Merge_CombinesTwoResults()
     {
-        var r1 = new ValidationResult([new ValidationFailure("A", "err1")]);
-        var r2 = new ValidationResult([new ValidationFailure("B", "err2")]);
+        var r1 = new ValidationResult(errors: [new ValidationFailure(propertyName: "A", errorMessage: "err1")]);
+        var r2 = new ValidationResult(errors: [new ValidationFailure(propertyName: "B", errorMessage: "err2")]);
 
-        var merged = r1.Merge(r2);
+        var merged = r1.Merge(other: r2);
 
-        Assert.Equal(2, merged.Errors.Count);
-        Assert.Contains(merged.Errors, e => string.Equals(e.PropertyName, "A", StringComparison.InvariantCultureIgnoreCase));
-        Assert.Contains(merged.Errors, e => string.Equals(e.PropertyName, "B", StringComparison.InvariantCultureIgnoreCase));
+        Assert.Equal(expected: 2, actual: merged.Errors.Count);
+        Assert.Contains(collection: merged.Errors, filter: e => string.Equals(a: e.PropertyName, b: "A", comparisonType: StringComparison.InvariantCultureIgnoreCase));
+        Assert.Contains(collection: merged.Errors, filter: e => string.Equals(a: e.PropertyName, b: "B", comparisonType: StringComparison.InvariantCultureIgnoreCase));
     }
 
     [Fact]
     public void Combine_CombinesMultipleResults()
     {
-        var r1 = new ValidationResult([new ValidationFailure("A", "err1")]);
-        var r2 = new ValidationResult([new ValidationFailure("B", "err2")]);
-        var r3 = new ValidationResult([new ValidationFailure("C", "err3")]);
+        var r1 = new ValidationResult(errors: [new ValidationFailure(propertyName: "A", errorMessage: "err1")]);
+        var r2 = new ValidationResult(errors: [new ValidationFailure(propertyName: "B", errorMessage: "err2")]);
+        var r3 = new ValidationResult(errors: [new ValidationFailure(propertyName: "C", errorMessage: "err3")]);
 
-        var combined = ValidationResult.Combine(r1, r2, r3);
+        var combined = ValidationResult.Combine(results: [r1, r2, r3]);
 
-        Assert.Equal(3, combined.Errors.Count);
+        Assert.Equal(expected: 3, actual: combined.Errors.Count);
     }
 
     [Fact]
     public void Combine_EmptyResults_ReturnsValid()
     {
-        var combined = ValidationResult.Combine(new ValidationResult(), new ValidationResult());
-        Assert.True(combined.IsValid);
+        var combined = ValidationResult.Combine(results: [new ValidationResult(), new ValidationResult()]);
+        Assert.True(condition: combined.IsValid);
     }
 
     [Fact]
     public void ToString_Valid_ReturnsSuccessMessage()
     {
         var result = new ValidationResult();
-        Assert.Equal("Validation succeeded.", result.ToString());
+        Assert.Equal(expected: "Validation succeeded.", actual: result.ToString());
     }
 
     [Fact]
     public void ToString_Invalid_ContainsErrorCount()
     {
-        var result = new ValidationResult([
-            new ValidationFailure("A", "err1"),
-            new ValidationFailure("B", "err2")
+        var result = new ValidationResult(errors:
+        [
+            new ValidationFailure(propertyName: "A", errorMessage: "err1"),
+            new ValidationFailure(propertyName: "B", errorMessage: "err2")
         ]);
 
-        Assert.Contains("2 error(s)", result.ToString(), StringComparison.CurrentCultureIgnoreCase);
+        Assert.Contains(expectedSubstring: "2 error(s)", actualString: result.ToString(), comparisonType: StringComparison.CurrentCultureIgnoreCase);
     }
 }

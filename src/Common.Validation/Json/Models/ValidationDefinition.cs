@@ -10,18 +10,18 @@ public sealed class ValidationDefinition
     /// <summary>
     /// Gets or sets the optional JSON Schema reference for editor support.
     /// </summary>
-    [JsonPropertyName("$schema")]
+    [JsonPropertyName(name: "$schema")]
     public string? Schema { get; set; }
 
     /// <summary>
     /// Gets or sets the type name this definition applies to.
     /// </summary>
-    [JsonPropertyName("type")]
+    [JsonPropertyName(name: "type")]
     public string Type { get; set; } = string.Empty;
 
     /// <summary>
     /// Gets or sets the property validation definitions keyed by property name.
     /// </summary>
-    [JsonPropertyName("properties")]
+    [JsonPropertyName(name: "properties")]
     public IDictionary<string, PropertyDefinition>? Properties { get; set; }
 }

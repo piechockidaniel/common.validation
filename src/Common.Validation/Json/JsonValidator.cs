@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using System.Reflection;
 using Common.Validation.Core;
 using Common.Validation.Json.Models;
@@ -11,7 +12,7 @@ namespace Common.Validation.Json;
 /// Uses reflection to access properties of <typeparamref name="T"/> by name.
 /// </summary>
 /// <typeparam name="T">The type being validated.</typeparam>
-public class JsonValidator<T> : IValidator<T>
+public class JsonValidator<T> : IPropertyValidator<T>
 {
     private readonly ValidationDefinition _definition;
     private readonly IValidatorTypeRegistry _registry;
@@ -31,7 +32,7 @@ public class JsonValidator<T> : IValidator<T>
     /// <param name="registry">Optional custom registry. If <c>null</c>, uses the default with built-in validators.</param>
     public JsonValidator(ValidationDefinition definition, IValidatorTypeRegistry? registry = null)
     {
-        ArgumentNullException.ThrowIfNull(definition);
+        ArgumentNullException.ThrowIfNull(argument: definition);
         _definition = definition;
         _registry = registry ?? new ValidatorTypeRegistry();
         _compiledRules = CompileRules();
@@ -42,37 +43,72 @@ public class JsonValidator<T> : IValidator<T>
     /// <inheritdoc />
     public ValidationResult Validate(T instance)
     {
-        return Validate(instance, new ValidationContext(CachedLayer));
+        return Validate(instance: instance, context: new ValidationContext(layer: CachedLayer));
     }
 
     /// <inheritdoc />
     public ValidationResult Validate(T instance, IValidationContext context)
     {
-        ArgumentNullException.ThrowIfNull(instance);
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(argument: instance);
+        ArgumentNullException.ThrowIfNull(argument: context);
 
         var failures = new List<ValidationFailure>();
 
         foreach (var rule in _compiledRules)
         {
-            var value = rule.PropertyAccessor(instance);
+            var value = rule.PropertyAccessor(arg: instance);
 
-            foreach (var check in rule.Checks.Where(c => !c.PropertyCheck.IsValid(value)))
+            foreach (var check in rule.Checks.Where(predicate: c => !c.PropertyCheck.IsValid(value: value)))
             {
-                var severity = ResolveSeverity(check, context.Layer);
-                var failure = new ValidationFailure(rule.PropertyName, check.Message, value)
+                var severity = ResolveSeverity(check: check, layer: context.Layer);
+                var failure = new ValidationFailure(propertyName: rule.PropertyName, errorMessage: check.Message, attemptedValue: value)
                 {
                     ErrorCode = check.ErrorCode,
                     Severity = severity
                 };
-                failures.Add(failure);
+                failures.Add(item: failure);
 
                 if (CascadeMode == CascadeMode.StopOnFirstFailure)
-                    return new ValidationResult(failures);
+                    return new ValidationResult(errors: failures);
             }
         }
 
-        return new ValidationResult(failures);
+        return new ValidationResult(errors: failures);
+    }
+
+    /// <inheritdoc cref="IPropertyValidator{T}.ValidateProperty" />
+    ValidationResult IPropertyValidator<T>.ValidateProperty<TProperty>(T instance, Expression<Func<T, TProperty>> propertyExpression, IValidationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(argument: instance);
+        ArgumentNullException.ThrowIfNull(argument: propertyExpression);
+        ArgumentNullException.ThrowIfNull(argument: context);
+
+        var propertyName = PropertyExpressionHelper.GetPropertyName(expression: propertyExpression);
+        var failures = new List<ValidationFailure>();
+
+        foreach (var rule in _compiledRules)
+        {
+            if (!string.Equals(rule.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var value = rule.PropertyAccessor(arg: instance);
+
+            foreach (var check in rule.Checks.Where(predicate: c => !c.PropertyCheck.IsValid(value: value)))
+            {
+                var severity = ResolveSeverity(check: check, layer: context.Layer);
+                var failure = new ValidationFailure(propertyName: rule.PropertyName, errorMessage: check.Message, attemptedValue: value)
+                {
+                    ErrorCode = check.ErrorCode,
+                    Severity = severity
+                };
+                failures.Add(item: failure);
+
+                if (CascadeMode == CascadeMode.StopOnFirstFailure)
+                    return new ValidationResult(errors: failures);
+            }
+        }
+
+        return new ValidationResult(errors: failures);
     }
 
     #endregion
@@ -85,23 +121,23 @@ public class JsonValidator<T> : IValidator<T>
     /// <inheritdoc />
     ValidationResult IValidator.Validate(object instance)
     {
-        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(argument: instance);
         if (instance is not T typed)
             throw new ArgumentException(
-                $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
-                nameof(instance));
-        return Validate(typed);
+                message: $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
+                paramName: nameof(instance));
+        return Validate(instance: typed);
     }
 
     /// <inheritdoc />
     ValidationResult IValidator.Validate(object instance, IValidationContext context)
     {
-        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(argument: instance);
         if (instance is not T typed)
             throw new ArgumentException(
-                $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
-                nameof(instance));
-        return Validate(typed, context);
+                message: $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
+                paramName: nameof(instance));
+        return Validate(instance: typed, context: context);
     }
 
     #endregion
@@ -120,43 +156,43 @@ public class JsonValidator<T> : IValidator<T>
 
         foreach (var (propertyName, propertyDef) in _definition.Properties)
         {
-            var propInfo = type.GetProperty(propertyName,
-                BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
+            var propInfo = type.GetProperty(name: propertyName,
+                bindingAttr: BindingFlags.Public | BindingFlags.Instance | BindingFlags.IgnoreCase);
 
             if (propInfo is null)
                 throw new InvalidOperationException(
-                    $"Property '{propertyName}' not found on type '{type.FullName}'.");
+                    message: $"Property '{propertyName}' not found on type '{type.FullName}'.");
 
-            var accessor = CreateAccessor(propInfo);
+            var accessor = CreateAccessor(propInfo: propInfo);
             var checks = new List<CompiledCheck>();
 
             if (propertyDef.Rules is not null)
             {
                 foreach (var ruleDef in propertyDef.Rules)
                 {
-                    var check = _registry.Resolve(ruleDef.Validator, ruleDef.Params);
-                    var defaultSeverity = SeverityParser.Parse(ruleDef.Severity);
+                    var check = _registry.Resolve(name: ruleDef.Validator, parameters: ruleDef.Params);
+                    var defaultSeverity = SeverityParser.Parse(value: ruleDef.Severity);
                     Dictionary<string, Severity>? layerSeverities = null;
 
                     if (ruleDef.Layers is { Count: > 0 })
                     {
-                        layerSeverities = new Dictionary<string, Severity>(StringComparer.OrdinalIgnoreCase);
+                        layerSeverities = new Dictionary<string, Severity>(comparer: StringComparer.OrdinalIgnoreCase);
                         foreach (var (layer, severityStr) in ruleDef.Layers)
                         {
-                            layerSeverities[layer] = SeverityParser.Parse(severityStr);
+                            layerSeverities[key: layer] = SeverityParser.Parse(value: severityStr);
                         }
                     }
 
-                    checks.Add(new CompiledCheck(
-                        check,
-                        ruleDef.Message,
-                        ruleDef.ErrorCode,
-                        defaultSeverity,
-                        layerSeverities));
+                    checks.Add(item: new CompiledCheck(
+                        PropertyCheck: check,
+                        Message: ruleDef.Message,
+                        ErrorCode: ruleDef.ErrorCode,
+                        DefaultSeverity: defaultSeverity,
+                        LayerSeverities: layerSeverities));
                 }
             }
 
-            rules.Add(new CompiledPropertyRule(propInfo.Name, accessor, checks));
+            rules.Add(item: new CompiledPropertyRule(PropertyName: propInfo.Name, PropertyAccessor: accessor, Checks: checks));
         }
 
         return rules;
@@ -164,14 +200,14 @@ public class JsonValidator<T> : IValidator<T>
 
     private static Func<T, object?> CreateAccessor(PropertyInfo propInfo)
     {
-        return instance => propInfo.GetValue(instance);
+        return instance => propInfo.GetValue(obj: instance);
     }
 
     private static Severity ResolveSeverity(CompiledCheck check, string? layer)
     {
         if (layer is not null
             && check.LayerSeverities is not null
-            && check.LayerSeverities.TryGetValue(layer, out var layerSeverity))
+            && check.LayerSeverities.TryGetValue(key: layer, value: out var layerSeverity))
         {
             return layerSeverity;
         }

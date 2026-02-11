@@ -15,5 +15,5 @@ public interface IValidationContext
     /// <summary>
     /// Gets a dictionary for passing custom data through the validation pipeline.
     /// </summary>
-    IDictionary<string, object?> Items { get; }
+    IDictionary<string, object?>? Items { get; }
 }

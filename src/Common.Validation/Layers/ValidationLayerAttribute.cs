@@ -18,7 +18,7 @@ namespace Common.Validation.Layers;
 /// </code>
 /// </para>
 /// </remarks>
-[AttributeUsage(AttributeTargets.Class | AttributeTargets.Interface, Inherited = true, AllowMultiple = false)]
+[AttributeUsage(validOn: AttributeTargets.Class | AttributeTargets.Interface, Inherited = true, AllowMultiple = false)]
 public sealed class ValidationLayerAttribute : Attribute
 {
     /// <summary>
@@ -32,7 +32,7 @@ public sealed class ValidationLayerAttribute : Attribute
     /// <param name="layer">The validation layer name (e.g. "api", "dto", "entity").</param>
     public ValidationLayerAttribute(string layer)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(layer);
+        ArgumentException.ThrowIfNullOrWhiteSpace(argument: layer);
         Layer = layer;
     }
 }

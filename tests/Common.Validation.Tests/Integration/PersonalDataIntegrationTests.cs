@@ -22,29 +22,29 @@ public class PersonalDataIntegrationTests
     {
         public PersonalDataValidator()
         {
-            RuleFor(x => x.FirstName)
-                .NotEmpty().WithMessage("First name is required.").WithSeverity(Severity.Forbidden)
-                .MaxLength(100).WithMessage("First name must not exceed 100 characters.").WithSeverity(Severity.Forbidden);
+            RuleFor(expression: x => x.FirstName)
+                .NotEmpty().WithMessage(message: "First name is required.").WithSeverity(severity: Severity.Forbidden)
+                .MaxLength(max: 100).WithMessage(message: "First name must not exceed 100 characters.").WithSeverity(severity: Severity.Forbidden);
 
-            RuleFor(x => x.LastName)
-                .NotEmpty().WithMessage("Last name is required.").WithSeverity(Severity.Forbidden)
-                .MaxLength(100).WithMessage("Last name must not exceed 100 characters.").WithSeverity(Severity.Forbidden);
+            RuleFor(expression: x => x.LastName)
+                .NotEmpty().WithMessage(message: "Last name is required.").WithSeverity(severity: Severity.Forbidden)
+                .MaxLength(max: 100).WithMessage(message: "Last name must not exceed 100 characters.").WithSeverity(severity: Severity.Forbidden);
 
-            RuleFor(x => x.Email)
-                .NotEmpty().WithMessage("Email is required.").WithSeverity(Severity.Forbidden)
-                .EmailAddress().WithMessage("Invalid email format.").WithSeverity(Severity.Forbidden);
+            RuleFor(expression: x => x.Email)
+                .NotEmpty().WithMessage(message: "Email is required.").WithSeverity(severity: Severity.Forbidden)
+                .EmailAddress().WithMessage(message: "Invalid email format.").WithSeverity(severity: Severity.Forbidden);
 
-            RuleFor(x => x.Phone)
-                .NotEmpty().WithMessage("Phone number is recommended.").WithSeverity(Severity.AtOwnRisk)
-                .PhoneNumber().WithMessage("Invalid phone number format.").WithSeverity(Severity.AtOwnRisk);
+            RuleFor(expression: x => x.Phone)
+                .NotEmpty().WithMessage(message: "Phone number is recommended.").WithSeverity(severity: Severity.AtOwnRisk)
+                .PhoneNumber().WithMessage(message: "Invalid phone number format.").WithSeverity(severity: Severity.AtOwnRisk);
 
-            RuleFor(x => x.Citizenship)
-                .NotEmpty().WithMessage("Citizenship is required.").WithSeverity(Severity.Forbidden)
-                .Length(2, 3).WithMessage("Citizenship must be a 2- or 3-letter ISO 3166 country code.").WithSeverity(Severity.Forbidden);
+            RuleFor(expression: x => x.Citizenship)
+                .NotEmpty().WithMessage(message: "Citizenship is required.").WithSeverity(severity: Severity.Forbidden)
+                .Length(min: 2, max: 3).WithMessage(message: "Citizenship must be a 2- or 3-letter ISO 3166 country code.").WithSeverity(severity: Severity.Forbidden);
 
-            RuleFor(x => x.TaxResidency)
-                .NotEmpty().WithMessage("Tax residency is recommended for full compliance.").WithSeverity(Severity.NotRecommended)
-                .Length(2, 3).WithMessage("Tax residency should be a 2- or 3-letter ISO 3166 country code.").WithSeverity(Severity.NotRecommended);
+            RuleFor(expression: x => x.TaxResidency)
+                .NotEmpty().WithMessage(message: "Tax residency is recommended for full compliance.").WithSeverity(severity: Severity.NotRecommended)
+                .Length(min: 2, max: 3).WithMessage(message: "Tax residency should be a 2- or 3-letter ISO 3166 country code.").WithSeverity(severity: Severity.NotRecommended);
         }
     }
 
@@ -52,7 +52,7 @@ public class PersonalDataIntegrationTests
     public void Scenario1_ValidData_NoErrors()
     {
         var validator = new PersonalDataValidator();
-        var result = validator.Validate(new PersonalData
+        var result = validator.Validate(instance: new PersonalData
         {
             FirstName = "Jan",
             LastName = "Kowalski",
@@ -62,35 +62,35 @@ public class PersonalDataIntegrationTests
             TaxResidency = "PL"
         });
 
-        Assert.True(result.IsValid);
-        Assert.Empty(result.Errors);
+        Assert.True(condition: result.IsValid);
+        Assert.Empty(collection: result.Errors);
     }
 
     [Fact]
     public void Scenario2_AllEmpty_MixedSeverities()
     {
         var validator = new PersonalDataValidator();
-        var result = validator.Validate(new PersonalData());
+        var result = validator.Validate(instance: new PersonalData());
 
-        Assert.False(result.IsValid);
-        Assert.True(result.HasForbidden);
-        Assert.True(result.HasAtOwnRisk);
-        Assert.True(result.HasNotRecommended);
+        Assert.False(condition: result.IsValid);
+        Assert.True(condition: result.HasForbidden);
+        Assert.True(condition: result.HasAtOwnRisk);
+        Assert.True(condition: result.HasNotRecommended);
 
         // Forbidden: FirstName(NotEmpty), LastName(NotEmpty), Email(NotEmpty+EmailAddress), 
         // Citizenship(NotEmpty+Length) = 6 Forbidden failures
-        Assert.Equal(6, result.BySeverity(Severity.Forbidden).Count);
+        Assert.Equal(expected: 6, actual: result.BySeverity(severity: Severity.Forbidden).Count);
         // AtOwnRisk: Phone(NotEmpty+PhoneNumber) = 2
-        Assert.Equal(2, result.BySeverity(Severity.AtOwnRisk).Count);
+        Assert.Equal(expected: 2, actual: result.BySeverity(severity: Severity.AtOwnRisk).Count);
         // NotRecommended: TaxResidency(NotEmpty+Length) = 2
-        Assert.Equal(2, result.BySeverity(Severity.NotRecommended).Count);
+        Assert.Equal(expected: 2, actual: result.BySeverity(severity: Severity.NotRecommended).Count);
     }
 
     [Fact]
     public void Scenario3_MissingOptionalOnly_NoForbiddenErrors()
     {
         var validator = new PersonalDataValidator();
-        var result = validator.Validate(new PersonalData
+        var result = validator.Validate(instance: new PersonalData
         {
             FirstName = "Anna",
             LastName = "Nowak",
@@ -100,17 +100,17 @@ public class PersonalDataIntegrationTests
             TaxResidency = ""
         });
 
-        Assert.False(result.IsValid);
-        Assert.False(result.HasForbidden);
-        Assert.True(result.HasAtOwnRisk);
-        Assert.True(result.HasNotRecommended);
+        Assert.False(condition: result.IsValid);
+        Assert.False(condition: result.HasForbidden);
+        Assert.True(condition: result.HasAtOwnRisk);
+        Assert.True(condition: result.HasNotRecommended);
     }
 
     [Fact]
     public void Scenario4_InvalidFormats_ReturnsFormatErrors()
     {
         var validator = new PersonalDataValidator();
-        var result = validator.Validate(new PersonalData
+        var result = validator.Validate(instance: new PersonalData
         {
             FirstName = "Maria",
             LastName = "Garcia",
@@ -120,11 +120,11 @@ public class PersonalDataIntegrationTests
             TaxResidency = "PORTUGAL"
         });
 
-        Assert.False(result.IsValid);
-        Assert.True(result.HasForbidden);
+        Assert.False(condition: result.IsValid);
+        Assert.True(condition: result.HasForbidden);
 
         // Email format and Citizenship/TaxResidency length errors
-        Assert.Contains(result.Errors, e => string.Equals(e.PropertyName, "Email", StringComparison.InvariantCultureIgnoreCase) && e.ErrorMessage.Contains("email format"));
-        Assert.Contains(result.Errors, e => string.Equals(e.PropertyName, "Citizenship", StringComparison.InvariantCultureIgnoreCase) && e.ErrorMessage.Contains("country code"));
+        Assert.Contains(collection: result.Errors, filter: e => string.Equals(a: e.PropertyName, b: "Email", comparisonType: StringComparison.InvariantCultureIgnoreCase) && e.ErrorMessage.Contains(value: "email format"));
+        Assert.Contains(collection: result.Errors, filter: e => string.Equals(a: e.PropertyName, b: "Citizenship", comparisonType: StringComparison.InvariantCultureIgnoreCase) && e.ErrorMessage.Contains(value: "country code"));
     }
 }

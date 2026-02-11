@@ -10,7 +10,7 @@ namespace Common.Validation.Core;
 /// Inherit from this class and define rules in the constructor.
 /// </summary>
 /// <typeparam name="T">The type of the object being validated.</typeparam>
-public abstract class AbstractValidator<T> : IValidator<T>
+public abstract class AbstractValidator<T> : IPropertyValidator<T>
 {
     private readonly List<IValidationRule<T>> _rules = [];
     private static readonly string? CachedLayer = typeof(T)
@@ -32,8 +32,8 @@ public abstract class AbstractValidator<T> : IValidator<T>
     /// <returns>An <see cref="IRuleBuilder{T, TProperty}"/> for fluent rule chaining.</returns>
     protected IRuleBuilder<T, TProperty> RuleFor<TProperty>(Expression<Func<T, TProperty>> expression)
     {
-        var rule = new PropertyRule<T, TProperty>(expression);
-        _rules.Add(rule);
+        var rule = new PropertyRule<T, TProperty>(expression: expression);
+        _rules.Add(item: rule);
         return rule;
     }
 
@@ -42,27 +42,52 @@ public abstract class AbstractValidator<T> : IValidator<T>
     /// <inheritdoc />
     public ValidationResult Validate(T instance)
     {
-        return Validate(instance, new ValidationContext(CachedLayer));
+        return Validate(instance: instance, context: new ValidationContext(layer: CachedLayer));
     }
 
     /// <inheritdoc />
     public ValidationResult Validate(T instance, IValidationContext context)
     {
-        ArgumentNullException.ThrowIfNull(instance);
-        ArgumentNullException.ThrowIfNull(context);
+        ArgumentNullException.ThrowIfNull(argument: instance);
+        ArgumentNullException.ThrowIfNull(argument: context);
 
         var failures = new List<ValidationFailure>();
 
         foreach (var rule in _rules)
         {
-            var ruleFailures = rule.Validate(instance, context);
-            failures.AddRange(ruleFailures);
+            var ruleFailures = rule.Validate(instance: instance, context: context);
+            failures.AddRange(collection: ruleFailures);
 
             if (CascadeMode == CascadeMode.StopOnFirstFailure && failures.Count > 0)
                 break;
         }
 
-        return new ValidationResult(failures);
+        return new ValidationResult(errors: failures);
+    }
+
+    /// <inheritdoc cref="IPropertyValidator{T}.ValidateProperty" />
+    ValidationResult IPropertyValidator<T>.ValidateProperty<TProperty>(T instance, Expression<Func<T, TProperty>> propertyExpression, IValidationContext context)
+    {
+        ArgumentNullException.ThrowIfNull(argument: instance);
+        ArgumentNullException.ThrowIfNull(argument: propertyExpression);
+        ArgumentNullException.ThrowIfNull(argument: context);
+
+        var propertyName = PropertyExpressionHelper.GetPropertyName(expression: propertyExpression);
+        var failures = new List<ValidationFailure>();
+
+        foreach (var rule in _rules)
+        {
+            if (rule.PropertyName is null || !string.Equals(rule.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase))
+                continue;
+
+            var ruleFailures = rule.Validate(instance: instance, context: context);
+            failures.AddRange(collection: ruleFailures);
+
+            if (CascadeMode == CascadeMode.StopOnFirstFailure && failures.Count > 0)
+                break;
+        }
+
+        return new ValidationResult(errors: failures);
     }
 
     #endregion
@@ -75,27 +100,30 @@ public abstract class AbstractValidator<T> : IValidator<T>
     /// <inheritdoc />
     ValidationResult IValidator.Validate(object instance)
     {
-        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(argument: instance);
 
         if (instance is not T typed)
+        {
             throw new ArgumentException(
+                message:
                 $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
-                nameof(instance));
+                paramName: nameof(instance));
+        }
 
-        return Validate(typed);
+        return Validate(instance: typed);
     }
 
     /// <inheritdoc />
     ValidationResult IValidator.Validate(object instance, IValidationContext context)
     {
-        ArgumentNullException.ThrowIfNull(instance);
+        ArgumentNullException.ThrowIfNull(argument: instance);
 
         if (instance is not T typed)
             throw new ArgumentException(
-                $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
-                nameof(instance));
+                message: $"Expected instance of type '{typeof(T).FullName}' but received '{instance.GetType().FullName}'.",
+                paramName: nameof(instance));
 
-        return Validate(typed, context);
+        return Validate(instance: typed, context: context);
     }
 
     #endregion

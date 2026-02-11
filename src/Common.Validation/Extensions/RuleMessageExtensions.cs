@@ -16,7 +16,7 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> WithMessage<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, string message)
     {
-        return builder.SetMessage(message);
+        return builder.SetMessage(message: message);
     }
 
     /// <summary>
@@ -27,7 +27,7 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> WithErrorCode<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, string errorCode)
     {
-        return builder.SetErrorCode(errorCode);
+        return builder.SetErrorCode(errorCode: errorCode);
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> WithSeverity<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, Severity severity)
     {
-        return builder.SetSeverity(severity);
+        return builder.SetSeverity(severity: severity);
     }
 
     /// <summary>
@@ -53,7 +53,7 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> WithLayerSeverity<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, string layer, Severity severity)
     {
-        return builder.SetLayerSeverity(layer, severity);
+        return builder.SetLayerSeverity(layer: layer, severity: severity);
     }
 
     /// <summary>
@@ -64,7 +64,7 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> Cascade<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, CascadeMode cascadeMode)
     {
-        return builder.SetCascadeMode(cascadeMode);
+        return builder.SetCascadeMode(cascadeMode: cascadeMode);
     }
 
     /// <summary>
@@ -77,7 +77,7 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> When<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, Func<T, bool> condition)
     {
-        return builder.ApplyWhen(condition);
+        return builder.ApplyWhen(condition: condition);
     }
 
     /// <summary>
@@ -90,6 +90,6 @@ public static class RuleMessageExtensions
     public static IRuleBuilder<T, TProperty> Unless<T, TProperty>(
         this IRuleBuilder<T, TProperty> builder, Func<T, bool> condition)
     {
-        return builder.ApplyUnless(condition);
+        return builder.ApplyUnless(condition: condition);
     }
 }

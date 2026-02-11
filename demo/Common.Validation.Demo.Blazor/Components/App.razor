@@ -6,8 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <base href="/" />
     <ResourcePreloader />
-    <link rel="stylesheet" href="@Assets["app.css"]" />
-    <link rel="stylesheet" href="@Assets["Common.Validation.Demo.Blazor.styles.css"]" />
+    <link rel="stylesheet" href="@Assets[key: "app.css"]" />
+    <link rel="stylesheet" href="@Assets[key: "Common.Validation.Demo.Blazor.styles.css"]" />
     <ImportMap />
     <HeadOutlet />
 </head>
@@ -15,7 +15,7 @@
 <body>
     <Routes />
     <ReconnectModal />
-    <script src="@Assets["_framework/blazor.web.js"]"></script>
+    <script src="@Assets[key: "_framework/blazor.web.js"]"></script>
 </body>
 
 </html>

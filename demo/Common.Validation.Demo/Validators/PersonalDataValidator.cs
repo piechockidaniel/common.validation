@@ -12,31 +12,31 @@ public class PersonalDataValidator : AbstractValidator<PersonalData>
     public PersonalDataValidator()
     {
         // Forbidden — these must be present for the record to be processable
-        RuleFor(x => x.FirstName)
-            .NotEmpty().WithMessage("First name is required.").WithSeverity(Severity.Forbidden)
-            .MaxLength(100).WithMessage("First name must not exceed 100 characters.").WithSeverity(Severity.Forbidden);
+        RuleFor(expression: x => x.FirstName)
+            .NotEmpty().WithMessage(message: "First name is required.").WithSeverity(severity: Severity.Forbidden)
+            .MaxLength(max: 100).WithMessage(message: "First name must not exceed 100 characters.").WithSeverity(severity: Severity.Forbidden);
 
-        RuleFor(x => x.LastName)
-            .NotEmpty().WithMessage("Last name is required.").WithSeverity(Severity.Forbidden)
-            .MaxLength(100).WithMessage("Last name must not exceed 100 characters.").WithSeverity(Severity.Forbidden);
+        RuleFor(expression: x => x.LastName)
+            .NotEmpty().WithMessage(message: "Last name is required.").WithSeverity(severity: Severity.Forbidden)
+            .MaxLength(max: 100).WithMessage(message: "Last name must not exceed 100 characters.").WithSeverity(severity: Severity.Forbidden);
 
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.").WithSeverity(Severity.Forbidden)
-            .EmailAddress().WithMessage("Invalid email format.").WithSeverity(Severity.Forbidden);
+        RuleFor(expression: x => x.Email)
+            .NotEmpty().WithMessage(message: "Email is required.").WithSeverity(severity: Severity.Forbidden)
+            .EmailAddress().WithMessage(message: "Invalid email format.").WithSeverity(severity: Severity.Forbidden);
 
         // AtOwnRisk — phone is strongly recommended but not blocking
-        RuleFor(x => x.Phone)
-            .NotEmpty().WithMessage("Phone number is recommended.").WithSeverity(Severity.AtOwnRisk)
-            .PhoneNumber().WithMessage("Invalid phone number format.").WithSeverity(Severity.AtOwnRisk);
+        RuleFor(expression: x => x.Phone)
+            .NotEmpty().WithMessage(message: "Phone number is recommended.").WithSeverity(severity: Severity.AtOwnRisk)
+            .PhoneNumber().WithMessage(message: "Invalid phone number format.").WithSeverity(severity: Severity.AtOwnRisk);
 
         // Forbidden — citizenship is legally required
-        RuleFor(x => x.Citizenship)
-            .NotEmpty().WithMessage("Citizenship is required.").WithSeverity(Severity.Forbidden)
-            .Length(2, 3).WithMessage("Citizenship must be a 2- or 3-letter ISO 3166 country code.").WithSeverity(Severity.Forbidden);
+        RuleFor(expression: x => x.Citizenship)
+            .NotEmpty().WithMessage(message: "Citizenship is required.").WithSeverity(severity: Severity.Forbidden)
+            .Length(min: 2, max: 3).WithMessage(message: "Citizenship must be a 2- or 3-letter ISO 3166 country code.").WithSeverity(severity: Severity.Forbidden);
 
         // NotRecommended — tax residency is nice to have
-        RuleFor(x => x.TaxResidency)
-            .NotEmpty().WithMessage("Tax residency is recommended for full compliance.").WithSeverity(Severity.NotRecommended)
-            .Length(2, 3).WithMessage("Tax residency should be a 2- or 3-letter ISO 3166 country code.").WithSeverity(Severity.NotRecommended);
+        RuleFor(expression: x => x.TaxResidency)
+            .NotEmpty().WithMessage(message: "Tax residency is recommended for full compliance.").WithSeverity(severity: Severity.NotRecommended)
+            .Length(min: 2, max: 3).WithMessage(message: "Tax residency should be a 2- or 3-letter ISO 3166 country code.").WithSeverity(severity: Severity.NotRecommended);
     }
 }

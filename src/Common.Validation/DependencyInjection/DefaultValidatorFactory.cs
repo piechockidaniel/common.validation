@@ -24,7 +24,7 @@ internal sealed class DefaultValidatorFactory : IValidatorFactory
     /// <inheritdoc />
     public IValidator? GetValidator(Type type)
     {
-        var genericType = typeof(IValidator<>).MakeGenericType(type);
-        return _serviceProvider.GetService(genericType) as IValidator;
+        var genericType = typeof(IValidator<>).MakeGenericType(typeArguments: type);
+        return _serviceProvider.GetService(serviceType: genericType) as IValidator;
     }
 }

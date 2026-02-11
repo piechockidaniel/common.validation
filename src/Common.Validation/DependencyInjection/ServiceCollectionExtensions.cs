@@ -4,6 +4,7 @@ using Common.Validation.Json;
 using Common.Validation.Json.Registry;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.DependencyInjection.Extensions;
+using Loader = Common.Validation.Json.JsonValidationDefinitionLoader;
 
 namespace Common.Validation.DependencyInjection;
 
@@ -23,35 +24,32 @@ public static class ServiceCollectionExtensions
         Action<ValidationOptions>? configure = null)
     {
         var options = new ValidationOptions();
-        configure?.Invoke(options);
+        configure?.Invoke(obj: options);
 
-        services.TryAddSingleton(options);
+        services.TryAddSingleton(instance: options);
         services.TryAddSingleton<IValidatorTypeRegistry, ValidatorTypeRegistry>();
-        services.TryAddSingleton<JsonValidationDefinitionLoader>();
         services.TryAddTransient<IValidatorFactory, DefaultValidatorFactory>();
 
-        // Load JSON definitions if configured
-        if (options.JsonDefinitionPaths.Count > 0)
+
+        if (options.JsonDefinitionPaths?.Count > 0)
         {
-            var loader = new JsonValidationDefinitionLoader();
             foreach (var path in options.JsonDefinitionPaths)
             {
-                if (File.Exists(path))
+                if (File.Exists(path: path))
                 {
-                    var definition = loader.LoadFromFile(path);
-                    services.AddSingleton(definition);
+                    var definition = path.LoadFromFile();
+                    services.AddSingleton(implementationInstance: definition);
                 }
-                else if (Directory.Exists(path))
+                else if (Directory.Exists(path: path))
                 {
-                    var definitions = loader.LoadFromDirectory(path);
+                    var definitions = path.LoadFromDirectory();
                     foreach (var definition in definitions)
                     {
-                        services.AddSingleton(definition);
+                        services.AddSingleton(implementationInstance: definition);
                     }
                 }
             }
         }
-
         return services;
     }
 
@@ -68,24 +66,24 @@ public static class ServiceCollectionExtensions
         Assembly assembly,
         ServiceLifetime lifetime = ServiceLifetime.Transient)
     {
-        ArgumentNullException.ThrowIfNull(assembly);
+        ArgumentNullException.ThrowIfNull(argument: assembly);
 
         var validatorTypes = assembly.GetTypes()
-            .Where(t => t is { IsAbstract: false, IsInterface: false, IsGenericTypeDefinition: false })
-            .Where(t => t.GetInterfaces().Any(IsValidatorInterface));
+            .Where(predicate: t => t is { IsAbstract: false, IsInterface: false, IsGenericTypeDefinition: false }
+                                   && t.GetInterfaces().Any(predicate: IsValidatorInterface));
 
         foreach (var validatorType in validatorTypes)
         {
-            var interfaceTypes = validatorType.GetInterfaces().Where(IsValidatorInterface);
+            var interfaceTypes = validatorType.GetInterfaces().Where(predicate: IsValidatorInterface);
 
             foreach (var interfaceType in interfaceTypes)
             {
-                var descriptor = new ServiceDescriptor(interfaceType, validatorType, lifetime);
-                services.TryAdd(descriptor);
+                var descriptor = new ServiceDescriptor(serviceType: interfaceType, implementationType: validatorType, lifetime: lifetime);
+                services.TryAdd(descriptor: descriptor);
             }
 
             // Also register as non-generic IValidator
-            services.TryAdd(new ServiceDescriptor(typeof(IValidator), validatorType, lifetime));
+            services.TryAdd(descriptor: new ServiceDescriptor(serviceType: typeof(IValidator), implementationType: validatorType, lifetime: lifetime));
         }
 
         return services;
@@ -103,7 +101,7 @@ public static class ServiceCollectionExtensions
         this IServiceCollection services,
         ServiceLifetime lifetime = ServiceLifetime.Transient)
     {
-        return services.AddValidatorsFromAssembly(typeof(TMarker).Assembly, lifetime);
+        return services.AddValidatorsFromAssembly(assembly: typeof(TMarker).Assembly, lifetime: lifetime);
     }
 
     private static bool IsValidatorInterface(Type type)

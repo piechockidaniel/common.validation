@@ -8,7 +8,7 @@
             <div class="cv-severity-group cv-forbidden">
                 <h4 class="cv-severity-title">Forbidden</h4>
                 <ul class="cv-error-list">
-                    @foreach (var error in Result.BySeverity(Severity.Forbidden))
+                    @foreach (var error in Result.BySeverity(severity: Severity.Forbidden))
                     {
                         <li class="cv-error-item">
                             <strong>@error.PropertyName:</strong> @error.ErrorMessage
@@ -22,7 +22,7 @@
             <div class="cv-severity-group cv-at-own-risk">
                 <h4 class="cv-severity-title">At Own Risk</h4>
                 <ul class="cv-error-list">
-                    @foreach (var error in Result.BySeverity(Severity.AtOwnRisk))
+                    @foreach (var error in Result.BySeverity(severity: Severity.AtOwnRisk))
                     {
                         <li class="cv-error-item">
                             <strong>@error.PropertyName:</strong> @error.ErrorMessage
@@ -36,7 +36,7 @@
             <div class="cv-severity-group cv-not-recommended">
                 <h4 class="cv-severity-title">Not Recommended</h4>
                 <ul class="cv-error-list">
-                    @foreach (var error in Result.BySeverity(Severity.NotRecommended))
+                    @foreach (var error in Result.BySeverity(severity: Severity.NotRecommended))
                     {
                         <li class="cv-error-item">
                             <strong>@error.PropertyName:</strong> @error.ErrorMessage

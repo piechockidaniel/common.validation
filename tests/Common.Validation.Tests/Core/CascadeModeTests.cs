@@ -14,30 +14,30 @@ public class CascadeModeTests
     public void PropertyCascade_StopOnFirstFailure_StopsAfterFirstCheck()
     {
         var validator = new PropertyCascadeValidator();
-        var result = validator.Validate(new TestModel { Value = "" });
+        var result = validator.Validate(instance: new TestModel { Value = "" });
 
         // Should only get the NotEmpty failure, not the MinLength
-        Assert.Single(result.Errors);
-        Assert.Equal("Must not be empty.", result.Errors[0].ErrorMessage);
+        Assert.Single(collection: result.Errors);
+        Assert.Equal(expected: "Must not be empty.", actual: result.Errors[index: 0].ErrorMessage);
     }
 
     [Fact]
     public void PropertyCascade_Continue_ReportsAllFailures()
     {
         var validator = new PropertyContinueValidator();
-        var result = validator.Validate(new TestModel { Value = "" });
+        var result = validator.Validate(instance: new TestModel { Value = "" });
 
-        Assert.Equal(2, result.Errors.Count);
+        Assert.Equal(expected: 2, actual: result.Errors.Count);
     }
 
     private class PropertyCascadeValidator : AbstractValidator<TestModel>
     {
         public PropertyCascadeValidator()
         {
-            RuleFor(x => x.Value)
-                .Cascade(CascadeMode.StopOnFirstFailure)
-                .NotEmpty().WithMessage("Must not be empty.")
-                .MinLength(5).WithMessage("Must be at least 5 chars.");
+            RuleFor(expression: x => x.Value)
+                .Cascade(cascadeMode: CascadeMode.StopOnFirstFailure)
+                .NotEmpty().WithMessage(message: "Must not be empty.")
+                .MinLength(min: 5).WithMessage(message: "Must be at least 5 chars.");
         }
     }
 
@@ -45,9 +45,9 @@ public class CascadeModeTests
     {
         public PropertyContinueValidator()
         {
-            RuleFor(x => x.Value)
-                .NotEmpty().WithMessage("Must not be empty.")
-                .MinLength(5).WithMessage("Must be at least 5 chars.");
+            RuleFor(expression: x => x.Value)
+                .NotEmpty().WithMessage(message: "Must not be empty.")
+                .MinLength(min: 5).WithMessage(message: "Must be at least 5 chars.");
         }
     }
 }

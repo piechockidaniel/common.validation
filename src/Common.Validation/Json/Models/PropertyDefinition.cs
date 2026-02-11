@@ -10,6 +10,6 @@ public sealed class PropertyDefinition
     /// <summary>
     /// Gets or sets the list of validation rules for this property.
     /// </summary>
-    [JsonPropertyName("rules")]
+    [JsonPropertyName(name: "rules")]
     public IList<RuleDefinition>? Rules { get; set; }
 }

@@ -13,8 +13,8 @@ public static class CommonRuleExtensions
     public static IRuleBuilder<T, TProperty> NotNull<T, TProperty>(this IRuleBuilder<T, TProperty> builder)
     {
         return builder.AddCheck(
-            value => value is not null,
-            "must not be null.");
+            predicate: value => value is not null,
+            defaultMessage: "must not be null.");
     }
 
     /// <summary>
@@ -23,8 +23,8 @@ public static class CommonRuleExtensions
     public static IRuleBuilder<T, TProperty> Null<T, TProperty>(this IRuleBuilder<T, TProperty> builder)
     {
         return builder.AddCheck(
-            value => value is null,
-            "must be null.");
+            predicate: value => value is null,
+            defaultMessage: "must be null.");
     }
 
     /// <summary>
@@ -33,14 +33,14 @@ public static class CommonRuleExtensions
     public static IRuleBuilder<T, TProperty> NotEmpty<T, TProperty>(this IRuleBuilder<T, TProperty> builder)
     {
         return builder.AddCheck(
-            value => value switch
+            predicate: value => value switch
             {
                 null => false,
-                string s => !string.IsNullOrWhiteSpace(s),
+                string s => !string.IsNullOrWhiteSpace(value: s),
                 System.Collections.ICollection { Count: 0 } => false,
-                _ => !EqualityComparer<TProperty>.Default.Equals(value, default!)
+                _ => !EqualityComparer<TProperty>.Default.Equals(x: value, y: default!)
             },
-            "must not be empty.");
+            defaultMessage: "must not be empty.");
     }
 
     /// <summary>
@@ -49,14 +49,14 @@ public static class CommonRuleExtensions
     public static IRuleBuilder<T, TProperty> Empty<T, TProperty>(this IRuleBuilder<T, TProperty> builder)
     {
         return builder.AddCheck(
-            value => value switch
+            predicate: value => value switch
             {
                 null => true,
-                string s => string.IsNullOrWhiteSpace(s),
+                string s => string.IsNullOrWhiteSpace(value: s),
                 System.Collections.ICollection { Count: 0 } => true,
-                _ => EqualityComparer<TProperty>.Default.Equals(value, default!)
+                _ => EqualityComparer<TProperty>.Default.Equals(x: value, y: default!)
             },
-            "must be empty.");
+            defaultMessage: "must be empty.");
     }
 
     /// <summary>
@@ -66,8 +66,8 @@ public static class CommonRuleExtensions
         this IRuleBuilder<T, TProperty> builder, TProperty comparisonValue)
     {
         return builder.AddCheck(
-            value => EqualityComparer<TProperty>.Default.Equals(value, comparisonValue),
-            $"must equal '{comparisonValue}'.");
+            predicate: value => EqualityComparer<TProperty>.Default.Equals(x: value, y: comparisonValue),
+            defaultMessage: $"must equal '{comparisonValue}'.");
     }
 
     /// <summary>
@@ -77,8 +77,8 @@ public static class CommonRuleExtensions
         this IRuleBuilder<T, TProperty> builder, TProperty comparisonValue)
     {
         return builder.AddCheck(
-            value => !EqualityComparer<TProperty>.Default.Equals(value, comparisonValue),
-            $"must not equal '{comparisonValue}'.");
+            predicate: value => !EqualityComparer<TProperty>.Default.Equals(x: value, y: comparisonValue),
+            defaultMessage: $"must not equal '{comparisonValue}'.");
     }
 
     /// <summary>
@@ -92,7 +92,7 @@ public static class CommonRuleExtensions
         Func<TProperty, bool> predicate,
         string message = "did not satisfy the specified condition.")
     {
-        return builder.AddCheck(predicate, message);
+        return builder.AddCheck(predicate: predicate, defaultMessage: message);
     }
 
     /// <summary>
@@ -106,6 +106,6 @@ public static class CommonRuleExtensions
         Func<T, TProperty, bool> predicate,
         string message = "did not satisfy the specified condition.")
     {
-        return builder.AddCheck(predicate, message);
+        return builder.AddCheck(predicate: predicate, defaultMessage: message);
     }
 }

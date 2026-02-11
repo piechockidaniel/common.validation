@@ -22,9 +22,9 @@ public static class JsonValidationDefinitionLoader
     /// <returns>A parsed <see cref="ValidationDefinition"/>.</returns>
     public static ValidationDefinition Load(this string json)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(json);
-        return JsonSerializer.Deserialize<ValidationDefinition>(json, DefaultOptions)
-               ?? throw new JsonException("Failed to deserialize validation definition: result was null.");
+        ArgumentException.ThrowIfNullOrWhiteSpace(argument: json);
+        return JsonSerializer.Deserialize<ValidationDefinition>(json: json, options: DefaultOptions)
+               ?? throw new JsonException(message: "Failed to deserialize validation definition: result was null.");
     }
 
     /// <summary>
@@ -34,9 +34,9 @@ public static class JsonValidationDefinitionLoader
     /// <returns>A parsed <see cref="ValidationDefinition"/>.</returns>
     public static ValidationDefinition Load(this Stream stream)
     {
-        ArgumentNullException.ThrowIfNull(stream);
-        return JsonSerializer.Deserialize<ValidationDefinition>(stream, DefaultOptions)
-               ?? throw new JsonException("Failed to deserialize validation definition: result was null.");
+        ArgumentNullException.ThrowIfNull(argument: stream);
+        return JsonSerializer.Deserialize<ValidationDefinition>(utf8Json: stream, options: DefaultOptions)
+               ?? throw new JsonException(message: "Failed to deserialize validation definition: result was null.");
     }
 
     /// <summary>
@@ -46,9 +46,9 @@ public static class JsonValidationDefinitionLoader
     /// <returns>A parsed <see cref="ValidationDefinition"/>.</returns>
     public static ValidationDefinition LoadFromFile(this string filePath)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
-        using var stream = File.OpenRead(filePath);
-        return Load(stream);
+        ArgumentException.ThrowIfNullOrWhiteSpace(argument: filePath);
+        using var stream = File.OpenRead(path: filePath);
+        return Load(stream: stream);
     }
 
     /// <summary>
@@ -60,17 +60,17 @@ public static class JsonValidationDefinitionLoader
     public static IReadOnlyList<ValidationDefinition> LoadFromDirectory(
         this string directoryPath, string searchPattern = "*.validation.json")
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
+        ArgumentException.ThrowIfNullOrWhiteSpace(argument: directoryPath);
 
-        if (!Directory.Exists(directoryPath))
-            throw new DirectoryNotFoundException($"Validation definitions directory not found: {directoryPath}");
+        if (!Directory.Exists(path: directoryPath))
+            throw new DirectoryNotFoundException(message: $"Validation definitions directory not found: {directoryPath}");
 
-        var files = Directory.GetFiles(directoryPath, searchPattern, SearchOption.AllDirectories);
-        var definitions = new List<ValidationDefinition>(files.Length);
+        var files = Directory.GetFiles(path: directoryPath, searchPattern: searchPattern, searchOption: SearchOption.AllDirectories);
+        var definitions = new List<ValidationDefinition>(capacity: files.Length);
 
         foreach (var file in files)
         {
-            definitions.Add(file.LoadFromFile());
+            definitions.Add(item: file.LoadFromFile());
         }
 
         return definitions.AsReadOnly();

@@ -17,22 +17,22 @@ public class PersonalDataApiValidator : AbstractValidator<PersonalDataApiModel>
 
     private void ConfigureRules()
     {
-        RuleFor(x => x.FirstName)
-            .NotEmpty().WithMessage("First name is required.")
-            .WithSeverity(Severity.Forbidden)
-            .WithLayerSeverity("api", Severity.Forbidden)
-            .WithLayerSeverity("entity", Severity.NotRecommended);
+        RuleFor(expression: x => x.FirstName)
+            .NotEmpty().WithMessage(message: "First name is required.")
+            .WithSeverity(severity: Severity.Forbidden)
+            .WithLayerSeverity(layer: "api", severity: Severity.Forbidden)
+            .WithLayerSeverity(layer: "entity", severity: Severity.NotRecommended);
 
-        RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .WithSeverity(Severity.Forbidden)
-            .WithLayerSeverity("api", Severity.Forbidden)
-            .WithLayerSeverity("entity", Severity.AtOwnRisk);
+        RuleFor(expression: x => x.Email)
+            .NotEmpty().WithMessage(message: "Email is required.")
+            .WithSeverity(severity: Severity.Forbidden)
+            .WithLayerSeverity(layer: "api", severity: Severity.Forbidden)
+            .WithLayerSeverity(layer: "entity", severity: Severity.AtOwnRisk);
 
-        RuleFor(x => x.Phone)
-            .NotEmpty().WithMessage("Phone number is recommended.")
-            .WithSeverity(Severity.AtOwnRisk)
-            .WithLayerSeverity("api", Severity.AtOwnRisk)
-            .WithLayerSeverity("entity", Severity.NotRecommended);
+        RuleFor(expression: x => x.Phone)
+            .NotEmpty().WithMessage(message: "Phone number is recommended.")
+            .WithSeverity(severity: Severity.AtOwnRisk)
+            .WithLayerSeverity(layer: "api", severity: Severity.AtOwnRisk)
+            .WithLayerSeverity(layer: "entity", severity: Severity.NotRecommended);
     }
 }

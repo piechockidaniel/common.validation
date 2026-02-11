@@ -7,7 +7,7 @@ namespace Common.Validation.Demo.Models;
 /// The [ValidationLayer("entity")] attribute causes the validator to
 /// automatically apply "entity"-layer severity overrides.
 /// </summary>
-[ValidationLayer("entity")]
+[ValidationLayer(layer: "entity")]
 public class PersonalDataEntity
 {
     public string FirstName { get; set; } = string.Empty;

@@ -48,7 +48,7 @@
         }
 
         _messages = Result.Errors
-            .Where(e => string.Equals(e.PropertyName, name, StringComparison.OrdinalIgnoreCase))
+            .Where(predicate: e => string.Equals(a: e.PropertyName, b: name, comparisonType: StringComparison.OrdinalIgnoreCase))
             .ToList()
             .AsReadOnly();
     }
@@ -74,7 +74,7 @@
         if (_messages.Count == 0) return string.Empty;
 
         // Use the highest severity among messages
-        var maxSeverity = _messages.Max(m => m.Severity);
+        var maxSeverity = _messages.Max(selector: m => m.Severity);
         return maxSeverity switch
         {
             Severity.Forbidden => "cv-forbidden",

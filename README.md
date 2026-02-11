@@ -27,6 +27,7 @@ An interoperable, multi-layer validation framework for .NET 10 and TypeScript. D
   - [Basic Setup](#basic-setup)
   - [Assembly Scanning](#assembly-scanning)
   - [Validator Factory](#validator-factory)
+- [Property-Level Validation](#property-level-validation)
 - [Blazor Integration](#blazor-integration)
   - [Components](#components)
   - [EditContext Integration](#editcontext-integration)
@@ -522,6 +523,98 @@ public class ValidationMiddleware
 
 ---
 
+## Property-Level Validation
+
+You can validate a single property instead of the entire object. This is useful for:
+
+- **Real-time field validation** (e.g., on blur) without re-running rules for untouched fields
+- **Partial updates** where only certain fields changed
+- **Performance** when the object has many properties but you care about one
+
+### Usage
+
+Use the `ValidateProperty` extension method on any `IValidator<T>`:
+
+```csharp
+using Common.Validation.Extensions;
+
+var validator = new CreateOrderValidator();
+var order = new CreateOrderRequest { CustomerName = "", Email = "bad", Total = -5 };
+
+// Validate only the Email field
+var emailResult = validator.ValidateProperty(order, x => x.Email);
+
+if (emailResult.IsValid)
+    Console.WriteLine("Email is valid");
+else
+    foreach (var e in emailResult.Errors)
+        Console.WriteLine($"{e.PropertyName}: {e.ErrorMessage}");
+```
+
+### With Validation Context
+
+Property-level validation respects the same layer and context as full validation:
+
+```csharp
+var context = ValidationContext.ForLayer("entity");
+var result = validator.ValidateProperty(model, x => x.FirstName, context);
+```
+
+### Supported Validators
+
+- **AbstractValidator&lt;T&gt;** – Validates only the rules defined for the specified property.
+- **JsonValidator&lt;T&gt;** – Validates only the rules from the JSON definition for that property.
+- **Other IValidator&lt;T&gt;** – Falls back to full validation and filters the result by property name (less efficient but works).
+
+### JSON-based property validation
+
+`JsonValidator<T>` supports property-level validation with the same rules defined in your JSON definition. This is useful when rules come from configuration or are shared with a TypeScript frontend:
+
+```csharp
+using Common.Validation.Extensions;
+using Common.Validation.Json;
+
+// Load definition (e.g. from PersonalData.validation.json)
+var definition = "PersonalData.validation.json".LoadFromFile();
+var validator = new JsonValidator<PersonalData>(definition);
+
+var model = new PersonalData
+{
+    FirstName = "Jan",
+    LastName = "Nowak",
+    Email = "invalid-email",  // Invalid
+    Citizenship = "PL",
+    TaxResidency = ""        // Not recommended
+};
+
+// Validate only the Email field
+var emailResult = validator.ValidateProperty(model, x => x.Email);
+
+if (!emailResult.IsValid)
+    foreach (var e in emailResult.Errors)
+        Console.WriteLine($"{e.PropertyName}: {e.ErrorMessage}");
+// Output: Email: Invalid email format.
+```
+
+Layer context is respected when validating a single property:
+
+```csharp
+var context = ValidationContext.ForLayer("entity");
+var result = validator.ValidateProperty(model, x => x.FirstName, context);
+// Uses "entity" layer severities from the JSON definition
+```
+
+### When to Use
+
+| Scenario | Use |
+|----------|-----|
+| Form field blur / `onChange` | `ValidateProperty` |
+| Submit button clicked | `Validate` |
+| API receives partial PATCH | `ValidateProperty` per changed field |
+| Full model save | `Validate` |
+
+---
+
 ## Blazor Integration
 
 ### Components
@@ -710,6 +803,38 @@ Frontend: new Validator(definition).validate(t) --> ValidationResult
 ```
 
 Both produce the same failures for the same input, ensuring UI error messages match server-side enforcement.
+
+### PATCH API with per-field JSON validation
+
+When handling partial updates (PATCH), validate only the fields that changed using rules from a JSON definition:
+
+```csharp
+[HttpPatch("{id}")]
+public IActionResult UpdateUser(Guid id, [FromBody] Dictionary<string, object?> changedFields)
+{
+    var target = _repository.Get(id);
+    var update = MapToUpdate(target, changedFields);
+
+    var definition = "User.validation.json".LoadFromFile();
+    var validator = new JsonValidator<UserUpdate>(definition);
+
+    foreach (var (key, _) in changedFields)
+    {
+        var result = key switch
+        {
+            "email" => validator.ValidateProperty(update, u => u.Email),
+            "firstName" => validator.ValidateProperty(update, u => u.FirstName),
+            _ => new ValidationResult()
+        };
+        if (result.HasForbidden)
+            return BadRequest(result.Errors.Select(e => new { e.PropertyName, e.ErrorMessage }));
+    }
+
+    return Ok(_service.Update(target, update));
+}
+```
+
+This avoids validating untouched fields and keeps rules consistent with the shared JSON definition.
 
 ### Domain Entity Invariants
 

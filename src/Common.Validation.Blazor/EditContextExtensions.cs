@@ -21,33 +21,33 @@ public static class EditContextExtensions
         this EditContext editContext,
         IValidator<T> validator) where T : class
     {
-        ArgumentNullException.ThrowIfNull(editContext);
-        ArgumentNullException.ThrowIfNull(validator);
+        ArgumentNullException.ThrowIfNull(argument: editContext);
+        ArgumentNullException.ThrowIfNull(argument: validator);
 
-        var messageStore = new ValidationMessageStore(editContext);
+        var messageStore = new ValidationMessageStore(editContext: editContext);
 
         editContext.OnValidationRequested += (sender, _) =>
         {
             messageStore.Clear();
             if (sender is EditContext ctx && ctx.Model is T model)
             {
-                var result = validator.Validate(model);
-                PopulateMessageStore(messageStore, ctx, result);
+                var result = validator.Validate(instance: model);
+                PopulateMessageStore(messageStore: messageStore, editContext: ctx, result: result);
             }
         };
 
         editContext.OnFieldChanged += (sender, args) =>
         {
-            messageStore.Clear(args.FieldIdentifier);
+            messageStore.Clear(fieldIdentifier: args.FieldIdentifier);
             if (sender is EditContext ctx && ctx.Model is T model)
             {
-                var result = validator.Validate(model);
+                var result = validator.Validate(instance: model);
                 var fieldErrors = result.Errors
-                    .Where(e => string.Equals(e.PropertyName, args.FieldIdentifier.FieldName, StringComparison.OrdinalIgnoreCase));
+                    .Where(predicate: e => string.Equals(a: e.PropertyName, b: args.FieldIdentifier.FieldName, comparisonType: StringComparison.OrdinalIgnoreCase));
 
                 foreach (var error in fieldErrors)
                 {
-                    messageStore.Add(args.FieldIdentifier, FormatMessage(error));
+                    messageStore.Add(fieldIdentifier: args.FieldIdentifier, message: FormatMessage(error: error));
                 }
                 ctx.NotifyValidationStateChanged();
             }
@@ -63,8 +63,8 @@ public static class EditContextExtensions
     {
         foreach (var error in result.Errors)
         {
-            var fieldIdentifier = new FieldIdentifier(editContext.Model, error.PropertyName);
-            messageStore.Add(fieldIdentifier, FormatMessage(error));
+            var fieldIdentifier = new FieldIdentifier(model: editContext.Model, fieldName: error.PropertyName);
+            messageStore.Add(fieldIdentifier: fieldIdentifier, message: FormatMessage(error: error));
         }
 
         editContext.NotifyValidationStateChanged();

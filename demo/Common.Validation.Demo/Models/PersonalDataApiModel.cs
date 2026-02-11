@@ -7,7 +7,7 @@ namespace Common.Validation.Demo.Models;
 /// The [ValidationLayer("api")] attribute causes the validator to
 /// automatically apply "api"-layer severity overrides.
 /// </summary>
-[ValidationLayer("api")]
+[ValidationLayer(layer: "api")]
 public class PersonalDataApiModel
 {
     public string FirstName { get; set; } = string.Empty;

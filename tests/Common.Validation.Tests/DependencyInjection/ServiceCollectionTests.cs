@@ -17,8 +17,8 @@ public class ServiceCollectionTests
     {
         public TestValidator()
         {
-            RuleFor(x => x.Name)
-                .NotEmpty().WithMessage("Required");
+            RuleFor(expression: x => x.Name)
+                .NotEmpty().WithMessage(message: "Required");
         }
     }
 
@@ -30,9 +30,9 @@ public class ServiceCollectionTests
 
         var provider = services.BuildServiceProvider();
 
-        Assert.NotNull(provider.GetService<ValidationOptions>());
-        Assert.NotNull(provider.GetService<IValidatorTypeRegistry>());
-        Assert.NotNull(provider.GetService<IValidatorFactory>());
+        Assert.NotNull(@object: provider.GetService<ValidationOptions>());
+        Assert.NotNull(@object: provider.GetService<IValidatorTypeRegistry>());
+        Assert.NotNull(@object: provider.GetService<IValidatorFactory>());
     }
 
     [Fact]
@@ -40,13 +40,13 @@ public class ServiceCollectionTests
     {
         var services = new ServiceCollection();
         services.AddCommonValidation();
-        services.AddValidatorsFromAssembly(typeof(ServiceCollectionTests).Assembly);
+        services.AddValidatorsFromAssembly(assembly: typeof(ServiceCollectionTests).Assembly);
 
         var provider = services.BuildServiceProvider();
 
         var validator = provider.GetService<IValidator<TestModel>>();
-        Assert.NotNull(validator);
-        Assert.IsType<TestValidator>(validator);
+        Assert.NotNull(@object: validator);
+        Assert.IsType<TestValidator>(@object: validator);
     }
 
     [Fact]
@@ -59,7 +59,7 @@ public class ServiceCollectionTests
         var provider = services.BuildServiceProvider();
 
         var validator = provider.GetService<IValidator<TestModel>>();
-        Assert.NotNull(validator);
+        Assert.NotNull(@object: validator);
     }
 
     [Fact]
@@ -67,17 +67,17 @@ public class ServiceCollectionTests
     {
         var services = new ServiceCollection();
         services.AddCommonValidation();
-        services.AddValidatorsFromAssembly(typeof(ServiceCollectionTests).Assembly);
+        services.AddValidatorsFromAssembly(assembly: typeof(ServiceCollectionTests).Assembly);
 
         var provider = services.BuildServiceProvider();
         var factory = provider.GetRequiredService<IValidatorFactory>();
 
         var validator = factory.GetValidator<TestModel>();
-        Assert.NotNull(validator);
+        Assert.NotNull(@object: validator);
 
         var result = validator
-            !.Validate(new TestModel { Name = "" });
-        Assert.False(result.IsValid);
+            !.Validate(instance: new TestModel { Name = "" });
+        Assert.False(condition: result.IsValid);
     }
 
     [Fact]
@@ -85,14 +85,14 @@ public class ServiceCollectionTests
     {
         var services = new ServiceCollection();
         services.AddCommonValidation();
-        services.AddValidatorsFromAssembly(typeof(ServiceCollectionTests).Assembly);
+        services.AddValidatorsFromAssembly(assembly: typeof(ServiceCollectionTests).Assembly);
 
         var provider = services.BuildServiceProvider();
         var factory = provider.GetRequiredService<IValidatorFactory>();
 
-        var validator = factory.GetValidator(typeof(TestModel));
-        Assert.NotNull(validator);
-        Assert.Equal(typeof(TestModel), validator!.ValidatedType);
+        var validator = factory.GetValidator<TestModel>();
+        Assert.NotNull(@object: validator);
+        Assert.Equal(expected: typeof(TestModel), actual: validator!.ValidatedType);
     }
 
     [Fact]
@@ -105,6 +105,6 @@ public class ServiceCollectionTests
         var factory = provider.GetRequiredService<IValidatorFactory>();
 
         var validator = factory.GetValidator<string>();
-        Assert.Null(validator);
+        Assert.Null(@object: validator);
     }
 }

@@ -9,10 +9,10 @@ namespace Common.Validation.Extensions;
 public static partial class StringRuleExtensions
 {
     // Precompiled regex patterns for common validations
-    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 250)]
+    [GeneratedRegex(pattern: @"^[^@\s]+@[^@\s]+\.[^@\s]+$", options: RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 250)]
     private static partial Regex EmailRegex();
 
-    [GeneratedRegex(@"^\+?[\d\s\-\(\)]{7,20}$", RegexOptions.Compiled, matchTimeoutMilliseconds: 250)]
+    [GeneratedRegex(pattern: @"^\+?[\d\s\-\(\)]{7,20}$", options: RegexOptions.Compiled, matchTimeoutMilliseconds: 250)]
     private static partial Regex PhoneRegex();
 
     /// <summary>
@@ -22,8 +22,8 @@ public static partial class StringRuleExtensions
         this IRuleBuilder<T, string> builder, int max)
     {
         return builder.AddCheck(
-            value => value is null || value.Length <= max,
-            $"must be at most {max} characters long.");
+            predicate: value => value is null || value.Length <= max,
+            defaultMessage: $"must be at most {max} characters long.");
     }
 
     /// <summary>
@@ -33,8 +33,8 @@ public static partial class StringRuleExtensions
         this IRuleBuilder<T, string> builder, int min)
     {
         return builder.AddCheck(
-            value => value is not null && value.Length >= min,
-            $"must be at least {min} characters long.");
+            predicate: value => value is not null && value.Length >= min,
+            defaultMessage: $"must be at least {min} characters long.");
     }
 
     /// <summary>
@@ -44,8 +44,8 @@ public static partial class StringRuleExtensions
         this IRuleBuilder<T, string> builder, int min, int max)
     {
         return builder.AddCheck(
-            value => value is not null && value.Length >= min && value.Length <= max,
-            $"must be between {min} and {max} characters long.");
+            predicate: value => value is not null && value.Length >= min && value.Length <= max,
+            defaultMessage: $"must be between {min} and {max} characters long.");
     }
 
     /// <summary>
@@ -54,10 +54,10 @@ public static partial class StringRuleExtensions
     public static IRuleBuilder<T, string> Matches<T>(
         this IRuleBuilder<T, string> builder, string pattern)
     {
-        var regex = new Regex(pattern, RegexOptions.Compiled);
+        var regex = new Regex(pattern: pattern, options: RegexOptions.Compiled, matchTimeout: TimeSpan.FromMilliseconds(milliseconds: 250));
         return builder.AddCheck(
-            value => value is not null && regex.IsMatch(value),
-            $"must match the pattern '{pattern}'.");
+            predicate: value => value is not null && regex.IsMatch(input: value),
+            defaultMessage: $"must match the pattern '{pattern}'.");
     }
 
     /// <summary>
@@ -67,8 +67,8 @@ public static partial class StringRuleExtensions
         this IRuleBuilder<T, string> builder, Regex regex)
     {
         return builder.AddCheck(
-            value => value is not null && regex.IsMatch(value),
-            "must match the required pattern.");
+            predicate: value => value is not null && regex.IsMatch(input: value),
+            defaultMessage: "must match the required pattern.");
     }
 
     /// <summary>
@@ -78,8 +78,8 @@ public static partial class StringRuleExtensions
         this IRuleBuilder<T, string> builder)
     {
         return builder.AddCheck(
-            value => value is not null && EmailRegex().IsMatch(value),
-            "must be a valid email address.");
+            predicate: value => value is not null && EmailRegex().IsMatch(input: value),
+            defaultMessage: "must be a valid email address.");
     }
 
     /// <summary>
@@ -90,7 +90,7 @@ public static partial class StringRuleExtensions
         this IRuleBuilder<T, string> builder)
     {
         return builder.AddCheck(
-            value => value is not null && PhoneRegex().IsMatch(value),
-            "must be a valid phone number.");
+            predicate: value => value is not null && PhoneRegex().IsMatch(input: value),
+            defaultMessage: "must be a valid phone number.");
     }
 }

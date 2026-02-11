@@ -1,3 +1,4 @@
+using System.Globalization;
 using System.Text.Json;
 using System.Text.RegularExpressions;
 
@@ -9,7 +10,7 @@ namespace Common.Validation.Json.Registry;
 /// </summary>
 public class ValidatorTypeRegistry : IValidatorTypeRegistry
 {
-    private readonly Dictionary<string, Func<JsonElement?, IPropertyCheck>> _factories = new(StringComparer.OrdinalIgnoreCase);
+    private readonly Dictionary<string, Func<JsonElement?, IPropertyCheck>> _factories = new(comparer: StringComparer.OrdinalIgnoreCase);
 
     /// <summary>
     /// Creates a new <see cref="ValidatorTypeRegistry"/> with built-in validators registered.
@@ -22,120 +23,120 @@ public class ValidatorTypeRegistry : IValidatorTypeRegistry
     /// <inheritdoc />
     public void Register(string name, Func<JsonElement?, IPropertyCheck> factory)
     {
-        ArgumentException.ThrowIfNullOrWhiteSpace(name);
-        ArgumentNullException.ThrowIfNull(factory);
-        _factories[name] = factory;
+        ArgumentException.ThrowIfNullOrWhiteSpace(argument: name);
+        ArgumentNullException.ThrowIfNull(argument: factory);
+        _factories[key: name] = factory;
     }
 
     /// <inheritdoc />
     public IPropertyCheck Resolve(string name, JsonElement? parameters)
     {
-        if (!_factories.TryGetValue(name, out var factory))
-            throw new InvalidOperationException($"Validator type '{name}' is not registered.");
+        if (!_factories.TryGetValue(key: name, value: out var factory))
+            throw new InvalidOperationException(message: $"Validator type '{name}' is not registered.");
 
-        return factory(parameters);
+        return factory(arg: parameters);
     }
 
     /// <inheritdoc />
-    public bool IsRegistered(string name) => _factories.ContainsKey(name);
+    public bool IsRegistered(string name) => _factories.ContainsKey(key: name);
 
     private void RegisterBuiltIns()
     {
-        Register("notNull", _ => new DelegateCheck(v => v is not null));
-        Register("null", _ => new DelegateCheck(v => v is null));
+        Register(name: "notNull", factory: _ => new DelegateCheck(predicate: v => v is not null));
+        Register(name: "null", factory: _ => new DelegateCheck(predicate: v => v is null));
 
-        Register("notEmpty", _ => new DelegateCheck(v => v switch
+        Register(name: "notEmpty", factory: _ => new DelegateCheck(predicate: v => v switch
         {
             null => false,
-            string s => !string.IsNullOrWhiteSpace(s),
+            string s => !string.IsNullOrWhiteSpace(value: s),
             System.Collections.ICollection { Count: 0 } => false,
-            _ => true
+            _ => true,
         }));
 
-        Register("empty", _ => new DelegateCheck(v => v switch
+        Register(name: "empty", factory: _ => new DelegateCheck(predicate: v => v switch
         {
             null => true,
-            string s => string.IsNullOrWhiteSpace(s),
+            string s => string.IsNullOrWhiteSpace(value: s),
             System.Collections.ICollection { Count: 0 } => true,
-            _ => false
+            _ => false,
         }));
 
-        Register("maxLength", p =>
+        Register(name: "maxLength", factory: p =>
         {
-            var max = GetRequiredInt(p, "max");
-            return new DelegateCheck(v => v is null || (v is string s && s.Length <= max));
+            var max = GetRequiredInt(parameters: p, name: "max");
+            return new DelegateCheck(predicate: v => v is null || (v is string s && s.Length <= max));
         });
 
-        Register("minLength", p =>
+        Register(name: "minLength", factory: p =>
         {
-            var min = GetRequiredInt(p, "min");
-            return new DelegateCheck(v => v is string s && s.Length >= min);
+            var min = GetRequiredInt(parameters: p, name: "min");
+            return new DelegateCheck(predicate: v => v is string s && s.Length >= min);
         });
 
-        Register("length", p =>
+        Register(name: "length", factory: p =>
         {
-            var min = GetRequiredInt(p, "min");
-            var max = GetRequiredInt(p, "max");
-            return new DelegateCheck(v => v is string s && s.Length >= min && s.Length <= max);
+            var min = GetRequiredInt(parameters: p, name: "min");
+            var max = GetRequiredInt(parameters: p, name: "max");
+            return new DelegateCheck(predicate: v => v is string s && s.Length >= min && s.Length <= max);
         });
 
-        Register("email", _ => new DelegateCheck(v =>
-            v is string s && Regex.IsMatch(s, @"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase)));
+        Register(name: "email", factory: _ => new DelegateCheck(predicate: v =>
+            v is string s && Regex.IsMatch(input: s, pattern: @"^[^@\s]+@[^@\s]+\.[^@\s]+$", options: RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500))));
 
-        Register("phone", _ => new DelegateCheck(v =>
-            v is string s && Regex.IsMatch(s, @"^\+?[\d\s\-\(\)]{7,20}$")));
+        Register(name: "phone", factory: _ => new DelegateCheck(predicate: v =>
+            v is string s && Regex.IsMatch(input: s, pattern: @"^\+?[\d\s\-\(\)]{7,20}$", options: RegexOptions.IgnoreCase, TimeSpan.FromMilliseconds(500))));
 
-        Register("matches", p =>
+        Register(name: "matches", factory: p =>
         {
-            var pattern = GetRequiredString(p, "pattern");
-            var regex = new Regex(pattern, RegexOptions.Compiled);
-            return new DelegateCheck(v => v is string s && regex.IsMatch(s));
+            var pattern = GetRequiredString(parameters: p, name: "pattern");
+            var regex = new Regex(pattern: pattern, options: RegexOptions.Compiled, TimeSpan.FromMilliseconds(500));
+            return new DelegateCheck(predicate: v => v is string s && regex.IsMatch(input: s));
         });
 
-        Register("equal", p =>
+        Register(name: "equal", factory: p =>
         {
-            var expected = GetRequiredString(p, "value");
-            return new DelegateCheck(v => string.Equals(v?.ToString(), expected, StringComparison.Ordinal));
+            var expected = GetRequiredString(parameters: p, name: "value");
+            return new DelegateCheck(predicate: v => string.Equals(a: v?.ToString(), b: expected, comparisonType: StringComparison.Ordinal));
         });
 
-        Register("notEqual", p =>
+        Register(name: "notEqual", factory: p =>
         {
-            var expected = GetRequiredString(p, "value");
-            return new DelegateCheck(v => !string.Equals(v?.ToString(), expected, StringComparison.Ordinal));
+            var expected = GetRequiredString(parameters: p, name: "value");
+            return new DelegateCheck(predicate: v => !string.Equals(a: v?.ToString(), b: expected, comparisonType: StringComparison.Ordinal));
         });
 
-        Register("greaterThan", p =>
+        Register(name: "greaterThan", factory: p =>
         {
-            var threshold = GetRequiredDouble(p, "value");
-            return new DelegateCheck(v => v is IComparable c && Convert.ToDouble(c) > threshold);
+            var threshold = GetRequiredDouble(parameters: p, name: "value");
+            return new DelegateCheck(predicate: v => v is IComparable c && Convert.ToDouble(value: c, provider: NumberFormatInfo.InvariantInfo) > threshold);
         });
 
-        Register("greaterThanOrEqual", p =>
+        Register(name: "greaterThanOrEqual", factory: p =>
         {
-            var threshold = GetRequiredDouble(p, "value");
-            return new DelegateCheck(v => v is IComparable c && Convert.ToDouble(c) >= threshold);
+            var threshold = GetRequiredDouble(parameters: p, name: "value");
+            return new DelegateCheck(predicate: v => v is IComparable c && Convert.ToDouble(value: c, provider: NumberFormatInfo.InvariantInfo) >= threshold);
         });
 
-        Register("lessThan", p =>
+        Register(name: "lessThan", factory: p =>
         {
-            var threshold = GetRequiredDouble(p, "value");
-            return new DelegateCheck(v => v is IComparable c && Convert.ToDouble(c) < threshold);
+            var threshold = GetRequiredDouble(parameters: p, name: "value");
+            return new DelegateCheck(predicate: v => v is IComparable c && Convert.ToDouble(value: c, provider: NumberFormatInfo.InvariantInfo) < threshold);
         });
 
-        Register("lessThanOrEqual", p =>
+        Register(name: "lessThanOrEqual", factory: p =>
         {
-            var threshold = GetRequiredDouble(p, "value");
-            return new DelegateCheck(v => v is IComparable c && Convert.ToDouble(c) <= threshold);
+            var threshold = GetRequiredDouble(parameters: p, name: "value");
+            return new DelegateCheck(predicate: v => v is IComparable c && Convert.ToDouble(value: c, provider: NumberFormatInfo.InvariantInfo) <= threshold);
         });
 
-        Register("inclusiveBetween", p =>
+        Register(name: "inclusiveBetween", factory: p =>
         {
-            var from = GetRequiredDouble(p, "from");
-            var to = GetRequiredDouble(p, "to");
-            return new DelegateCheck(v =>
+            var from = GetRequiredDouble(parameters: p, name: "from");
+            var to = GetRequiredDouble(parameters: p, name: "to");
+            return new DelegateCheck(predicate: v =>
             {
                 if (v is not IComparable) return false;
-                var d = Convert.ToDouble(v);
+                var d = Convert.ToDouble(value: v, provider: NumberFormatInfo.InvariantInfo);
                 return d >= from && d <= to;
             });
         });
@@ -146,47 +147,43 @@ public class ValidatorTypeRegistry : IValidatorTypeRegistry
     private static int GetRequiredInt(JsonElement? parameters, string name)
     {
         if (parameters is null || parameters.Value.ValueKind == JsonValueKind.Undefined)
-            throw new InvalidOperationException($"Parameter '{name}' is required.");
+            throw new InvalidOperationException(message: $"Parameter '{name}' is required.");
 
-        if (parameters.Value.TryGetProperty(name, out var prop) && prop.TryGetInt32(out var value))
+        if (parameters.Value.TryGetProperty(propertyName: name, value: out var prop) && prop.TryGetInt32(value: out var value))
             return value;
 
-        throw new InvalidOperationException($"Parameter '{name}' must be an integer.");
+        throw new InvalidOperationException(message: $"Parameter '{name}' must be an integer.");
     }
 
     private static string GetRequiredString(JsonElement? parameters, string name)
     {
         if (parameters is null || parameters.Value.ValueKind == JsonValueKind.Undefined)
-            throw new InvalidOperationException($"Parameter '{name}' is required.");
+            throw new InvalidOperationException(message: $"Parameter '{name}' is required.");
 
-        if (parameters.Value.TryGetProperty(name, out var prop) && prop.ValueKind == JsonValueKind.String)
+        if (parameters.Value.TryGetProperty(propertyName: name, value: out var prop) && prop.ValueKind == JsonValueKind.String)
             return prop.GetString()!;
 
-        throw new InvalidOperationException($"Parameter '{name}' must be a string.");
+        throw new InvalidOperationException(message: $"Parameter '{name}' must be a string.");
     }
 
     private static double GetRequiredDouble(JsonElement? parameters, string name)
     {
         if (parameters is null || parameters.Value.ValueKind == JsonValueKind.Undefined)
-            throw new InvalidOperationException($"Parameter '{name}' is required.");
+            throw new InvalidOperationException(message: $"Parameter '{name}' is required.");
 
-        if (parameters.Value.TryGetProperty(name, out var prop) && prop.TryGetDouble(out var value))
+        if (parameters.Value.TryGetProperty(propertyName: name, value: out var prop) && prop.TryGetDouble(value: out var value))
             return value;
 
-        throw new InvalidOperationException($"Parameter '{name}' must be a number.");
+        throw new InvalidOperationException(message: $"Parameter '{name}' must be a number.");
     }
 
     #endregion
 
     #region Inner types
 
-    private sealed class DelegateCheck : IPropertyCheck
+    private sealed class DelegateCheck(Func<object?, bool> predicate) : IPropertyCheck
     {
-        private readonly Func<object?, bool> _predicate;
-
-        public DelegateCheck(Func<object?, bool> predicate) => _predicate = predicate;
-
-        public bool IsValid(object? value) => _predicate(value);
+        public bool IsValid(object? value) => predicate(arg: value);
     }
 
     #endregion

@@ -5,60 +5,59 @@ namespace Common.Validation.Tests.Json;
 public class ValidatorTypeRegistryTests
 {
     [Theory]
-    [InlineData("notNull")]
-    [InlineData("null")]
-    [InlineData("notEmpty")]
-    [InlineData("empty")]
-    [InlineData("maxLength")]
-    [InlineData("minLength")]
-    [InlineData("length")]
-    [InlineData("email")]
-    [InlineData("phone")]
-    [InlineData("matches")]
-    [InlineData("equal")]
-    [InlineData("notEqual")]
-    [InlineData("greaterThan")]
-    [InlineData("greaterThanOrEqual")]
-    [InlineData("lessThan")]
-    [InlineData("lessThanOrEqual")]
-    [InlineData("inclusiveBetween")]
+    [InlineData(data: "notNull")]
+    [InlineData(data: "null")]
+    [InlineData(data: "notEmpty")]
+    [InlineData(data: "empty")]
+    [InlineData(data: "maxLength")]
+    [InlineData(data: "minLength")]
+    [InlineData(data: "length")]
+    [InlineData(data: "email")]
+    [InlineData(data: "phone")]
+    [InlineData(data: "matches")]
+    [InlineData(data: "equal")]
+    [InlineData(data: "notEqual")]
+    [InlineData(data: "greaterThan")]
+    [InlineData(data: "greaterThanOrEqual")]
+    [InlineData(data: "lessThan")]
+    [InlineData(data: "lessThanOrEqual")]
+    [InlineData(data: "inclusiveBetween")]
     public void BuiltInValidators_AreRegistered(string name)
     {
         var registry = new ValidatorTypeRegistry();
-        Assert.True(registry.IsRegistered(name));
+        Assert.True(condition: registry.IsRegistered(name: name));
     }
 
     [Fact]
     public void Resolve_UnregisteredValidator_ThrowsInvalidOperation()
     {
         var registry = new ValidatorTypeRegistry();
-        Assert.Throws<InvalidOperationException>(() => registry.Resolve("nonexistent", null));
+        Assert.Throws<InvalidOperationException>(testCode: () => registry.Resolve(name: "nonexistent",
+            parameters: null));
     }
 
     [Fact]
     public void Register_CustomValidator_Works()
     {
         var registry = new ValidatorTypeRegistry();
-        registry.Register("custom", _ => new TestCheck(v => v is string s && s == "custom"));
+        registry.Register(name: "custom", factory: _ => new TestCheck(predicate: v => v is string s && s.Equals("custom", StringComparison.InvariantCultureIgnoreCase)));
 
-        var check = registry.Resolve("custom", null);
-        Assert.True(check.IsValid("custom"));
-        Assert.False(check.IsValid("other"));
+        var check = registry.Resolve(name: "custom", parameters: null);
+        Assert.True(condition: check.IsValid(value: "custom"));
+        Assert.False(condition: check.IsValid(value: "other"));
     }
 
     [Fact]
     public void Register_CaseInsensitive()
     {
         var registry = new ValidatorTypeRegistry();
-        Assert.True(registry.IsRegistered("NotEmpty"));
-        Assert.True(registry.IsRegistered("NOTEMPTY"));
-        Assert.True(registry.IsRegistered("notempty"));
+        Assert.True(condition: registry.IsRegistered(name: "NotEmpty"));
+        Assert.True(condition: registry.IsRegistered(name: "NOTEMPTY"));
+        Assert.True(condition: registry.IsRegistered(name: "notempty"));
     }
 
-    private class TestCheck : IPropertyCheck
+    private class TestCheck(Func<object?, bool> predicate) : IPropertyCheck
     {
-        private readonly Func<object?, bool> _predicate;
-        public TestCheck(Func<object?, bool> predicate) => _predicate = predicate;
-        public bool IsValid(object? value) => _predicate(value);
+        public bool IsValid(object? value) => predicate(arg: value);
     }
 }
