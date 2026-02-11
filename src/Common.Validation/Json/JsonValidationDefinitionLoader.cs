@@ -6,7 +6,7 @@ namespace Common.Validation.Json;
 /// <summary>
 /// Loads <see cref="ValidationDefinition"/> instances from JSON sources.
 /// </summary>
-public class JsonValidationDefinitionLoader
+public static class JsonValidationDefinitionLoader
 {
     private static readonly JsonSerializerOptions DefaultOptions = new()
     {
@@ -20,7 +20,7 @@ public class JsonValidationDefinitionLoader
     /// </summary>
     /// <param name="json">The JSON string containing the validation definition.</param>
     /// <returns>A parsed <see cref="ValidationDefinition"/>.</returns>
-    public ValidationDefinition Load(string json)
+    public static ValidationDefinition Load(this string json)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(json);
         return JsonSerializer.Deserialize<ValidationDefinition>(json, DefaultOptions)
@@ -32,7 +32,7 @@ public class JsonValidationDefinitionLoader
     /// </summary>
     /// <param name="stream">The stream containing JSON data.</param>
     /// <returns>A parsed <see cref="ValidationDefinition"/>.</returns>
-    public ValidationDefinition Load(Stream stream)
+    public static ValidationDefinition Load(this Stream stream)
     {
         ArgumentNullException.ThrowIfNull(stream);
         return JsonSerializer.Deserialize<ValidationDefinition>(stream, DefaultOptions)
@@ -44,7 +44,7 @@ public class JsonValidationDefinitionLoader
     /// </summary>
     /// <param name="filePath">The path to the JSON file.</param>
     /// <returns>A parsed <see cref="ValidationDefinition"/>.</returns>
-    public ValidationDefinition LoadFromFile(string filePath)
+    public static ValidationDefinition LoadFromFile(this string filePath)
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(filePath);
         using var stream = File.OpenRead(filePath);
@@ -57,8 +57,8 @@ public class JsonValidationDefinitionLoader
     /// <param name="directoryPath">The directory containing JSON definition files.</param>
     /// <param name="searchPattern">The file search pattern. Default is "*.validation.json".</param>
     /// <returns>A list of parsed <see cref="ValidationDefinition"/> instances.</returns>
-    public IReadOnlyList<ValidationDefinition> LoadFromDirectory(
-        string directoryPath, string searchPattern = "*.validation.json")
+    public static IReadOnlyList<ValidationDefinition> LoadFromDirectory(
+        this string directoryPath, string searchPattern = "*.validation.json")
     {
         ArgumentException.ThrowIfNullOrWhiteSpace(directoryPath);
 
@@ -70,7 +70,7 @@ public class JsonValidationDefinitionLoader
 
         foreach (var file in files)
         {
-            definitions.Add(LoadFromFile(file));
+            definitions.Add(file.LoadFromFile());
         }
 
         return definitions.AsReadOnly();

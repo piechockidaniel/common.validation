@@ -12,7 +12,7 @@ internal sealed class PropertyRule<T, TProperty> : IValidationRule<T>, IRuleBuil
 {
     private readonly Func<T, TProperty> _propertyAccessor;
     private readonly string _propertyName;
-    private readonly List<CheckDescriptor> _checks = new();
+    private readonly List<CheckDescriptor> _checks = [];
     private Func<T, bool>? _currentCondition;
     private CascadeMode _cascadeMode = CascadeMode.Continue;
 

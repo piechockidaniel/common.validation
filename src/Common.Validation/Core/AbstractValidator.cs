@@ -12,7 +12,7 @@ namespace Common.Validation.Core;
 /// <typeparam name="T">The type of the object being validated.</typeparam>
 public abstract class AbstractValidator<T> : IValidator<T>
 {
-    private readonly List<IValidationRule<T>> _rules = new();
+    private readonly List<IValidationRule<T>> _rules = [];
     private static readonly string? CachedLayer = typeof(T)
         .GetCustomAttribute<ValidationLayerAttribute>(inherit: true)?.Layer;
 

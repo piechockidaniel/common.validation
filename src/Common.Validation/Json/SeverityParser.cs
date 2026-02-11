@@ -23,7 +23,7 @@ internal static class SeverityParser
             "forbidden" => Severity.Forbidden,
             "atownrisk" or "at_own_risk" or "atown_risk" => Severity.AtOwnRisk,
             "notrecommended" or "not_recommended" => Severity.NotRecommended,
-            _ => throw new ArgumentException($"Unknown severity value: '{value}'. Expected: 'forbidden', 'atOwnRisk', or 'notRecommended'.")
+            _ => throw new ArgumentException($"Unknown severity value: '{value}'. Expected: 'forbidden', 'atOwnRisk', or 'notRecommended'.", value)
         };
     }
 }

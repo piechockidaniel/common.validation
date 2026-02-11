@@ -124,7 +124,7 @@ public class PersonalDataIntegrationTests
         Assert.True(result.HasForbidden);
 
         // Email format and Citizenship/TaxResidency length errors
-        Assert.Contains(result.Errors, e => e.PropertyName == "Email" && e.ErrorMessage.Contains("email format"));
-        Assert.Contains(result.Errors, e => e.PropertyName == "Citizenship" && e.ErrorMessage.Contains("country code"));
+        Assert.Contains(result.Errors, e => string.Equals(e.PropertyName, "Email", StringComparison.InvariantCultureIgnoreCase) && e.ErrorMessage.Contains("email format"));
+        Assert.Contains(result.Errors, e => string.Equals(e.PropertyName, "Citizenship", StringComparison.InvariantCultureIgnoreCase) && e.ErrorMessage.Contains("country code"));
     }
 }

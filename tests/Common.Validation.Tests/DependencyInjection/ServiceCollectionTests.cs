@@ -1,7 +1,6 @@
 using Common.Validation.Core;
 using Common.Validation.DependencyInjection;
 using Common.Validation.Extensions;
-using Common.Validation.Json;
 using Common.Validation.Json.Registry;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -33,7 +32,6 @@ public class ServiceCollectionTests
 
         Assert.NotNull(provider.GetService<ValidationOptions>());
         Assert.NotNull(provider.GetService<IValidatorTypeRegistry>());
-        Assert.NotNull(provider.GetService<JsonValidationDefinitionLoader>());
         Assert.NotNull(provider.GetService<IValidatorFactory>());
     }
 
@@ -77,7 +75,8 @@ public class ServiceCollectionTests
         var validator = factory.GetValidator<TestModel>();
         Assert.NotNull(validator);
 
-        var result = validator!.Validate(new TestModel { Name = "" });
+        var result = validator
+            !.Validate(new TestModel { Name = "" });
         Assert.False(result.IsValid);
     }
 

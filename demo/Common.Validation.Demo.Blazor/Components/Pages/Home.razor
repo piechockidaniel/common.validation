@@ -58,7 +58,7 @@
 </div>
 
 @code {
-    private PersonalData _model = new();
+    private readonly PersonalData _model = new();
     private ValidationResult? _result;
     private readonly PersonalDataValidator _validator = new();
 

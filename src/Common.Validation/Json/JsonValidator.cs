@@ -57,21 +57,18 @@ public class JsonValidator<T> : IValidator<T>
         {
             var value = rule.PropertyAccessor(instance);
 
-            foreach (var check in rule.Checks)
+            foreach (var check in rule.Checks.Where(c => !c.PropertyCheck.IsValid(value)))
             {
-                if (!check.PropertyCheck.IsValid(value))
+                var severity = ResolveSeverity(check, context.Layer);
+                var failure = new ValidationFailure(rule.PropertyName, check.Message, value)
                 {
-                    var severity = ResolveSeverity(check, context.Layer);
-                    var failure = new ValidationFailure(rule.PropertyName, check.Message, value)
-                    {
-                        ErrorCode = check.ErrorCode,
-                        Severity = severity
-                    };
-                    failures.Add(failure);
+                    ErrorCode = check.ErrorCode,
+                    Severity = severity
+                };
+                failures.Add(failure);
 
-                    if (CascadeMode == CascadeMode.StopOnFirstFailure)
-                        return new ValidationResult(failures);
-                }
+                if (CascadeMode == CascadeMode.StopOnFirstFailure)
+                    return new ValidationResult(failures);
             }
         }
 
@@ -116,6 +113,11 @@ public class JsonValidator<T> : IValidator<T>
         var rules = new List<CompiledPropertyRule>();
         var type = typeof(T);
 
+        if (_definition.Properties is null)
+        {
+            return rules;
+        }
+
         foreach (var (propertyName, propertyDef) in _definition.Properties)
         {
             var propInfo = type.GetProperty(propertyName,
@@ -128,27 +130,30 @@ public class JsonValidator<T> : IValidator<T>
             var accessor = CreateAccessor(propInfo);
             var checks = new List<CompiledCheck>();
 
-            foreach (var ruleDef in propertyDef.Rules)
+            if (propertyDef.Rules is not null)
             {
-                var check = _registry.Resolve(ruleDef.Validator, ruleDef.Params);
-                var defaultSeverity = SeverityParser.Parse(ruleDef.Severity);
-                Dictionary<string, Severity>? layerSeverities = null;
-
-                if (ruleDef.Layers is { Count: > 0 })
+                foreach (var ruleDef in propertyDef.Rules)
                 {
-                    layerSeverities = new Dictionary<string, Severity>(StringComparer.OrdinalIgnoreCase);
-                    foreach (var (layer, severityStr) in ruleDef.Layers)
-                    {
-                        layerSeverities[layer] = SeverityParser.Parse(severityStr);
-                    }
-                }
+                    var check = _registry.Resolve(ruleDef.Validator, ruleDef.Params);
+                    var defaultSeverity = SeverityParser.Parse(ruleDef.Severity);
+                    Dictionary<string, Severity>? layerSeverities = null;
 
-                checks.Add(new CompiledCheck(
-                    check,
-                    ruleDef.Message,
-                    ruleDef.ErrorCode,
-                    defaultSeverity,
-                    layerSeverities));
+                    if (ruleDef.Layers is { Count: > 0 })
+                    {
+                        layerSeverities = new Dictionary<string, Severity>(StringComparer.OrdinalIgnoreCase);
+                        foreach (var (layer, severityStr) in ruleDef.Layers)
+                        {
+                            layerSeverities[layer] = SeverityParser.Parse(severityStr);
+                        }
+                    }
+
+                    checks.Add(new CompiledCheck(
+                        check,
+                        ruleDef.Message,
+                        ruleDef.ErrorCode,
+                        defaultSeverity,
+                        layerSeverities));
+                }
             }
 
             rules.Add(new CompiledPropertyRule(propInfo.Name, accessor, checks));

@@ -86,7 +86,7 @@ public class CommonRuleTests
     [Fact]
     public void Must_CustomPredicate_Works()
     {
-        var v = CreateValidator(b => b.Must(s => s != null && s.StartsWith("A"), "Must start with A"));
+        var v = CreateValidator(b => b.Must(s => s != null && s.StartsWith('A'), "Must start with A"));
         Assert.True(v.Validate(new Model { Text = "Alice" }).IsValid);
         Assert.False(v.Validate(new Model { Text = "Bob" }).IsValid);
     }
@@ -109,7 +109,7 @@ public class CommonRuleTests
         }
     }
 
-    private static IValidator<Model> CreateValidator(
+    private static InlineValidator CreateValidator(
         Action<Common.Validation.Rules.IRuleBuilder<Model, string?>> configure)
     {
         return new InlineValidator(configure);

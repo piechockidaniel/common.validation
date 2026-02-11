@@ -1,6 +1,5 @@
 using Common.Validation.Core;
 using Common.Validation.Json;
-using Common.Validation.Json.Models;
 
 namespace Common.Validation.Tests.Json;
 
@@ -60,8 +59,7 @@ public class JsonValidatorTests
     [Fact]
     public void JsonValidator_ValidModel_ReturnsSuccess()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+        var definition = TestJson.Load();
         var validator = new JsonValidator<TestModel>(definition);
 
         var result = validator.Validate(new TestModel
@@ -77,8 +75,7 @@ public class JsonValidatorTests
     [Fact]
     public void JsonValidator_InvalidModel_ReturnsFailures()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+        var definition = TestJson.Load();
         var validator = new JsonValidator<TestModel>(definition);
 
         var result = validator.Validate(new TestModel
@@ -95,8 +92,7 @@ public class JsonValidatorTests
     [Fact]
     public void JsonValidator_RespectsSeverity()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+        var definition = TestJson.Load();
         var validator = new JsonValidator<TestModel>(definition);
 
         var result = validator.Validate(new TestModel
@@ -113,8 +109,8 @@ public class JsonValidatorTests
     [Fact]
     public void JsonValidator_LayerSeverity_Api()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+
+        var definition = TestJson.Load();
         var validator = new JsonValidator<TestModel>(definition);
 
         var context = ValidationContext.ForLayer("api");
@@ -127,8 +123,8 @@ public class JsonValidatorTests
     [Fact]
     public void JsonValidator_LayerSeverity_Entity()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+
+        var definition = TestJson.Load();
         var validator = new JsonValidator<TestModel>(definition);
 
         var context = ValidationContext.ForLayer("entity");
@@ -141,21 +137,21 @@ public class JsonValidatorTests
     [Fact]
     public void JsonValidationDefinitionLoader_LoadsDefinition()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+
+        var definition = TestJson.Load();
 
         Assert.Equal("TestModel", definition.Type);
-        Assert.Equal(3, definition.Properties.Count);
-        Assert.True(definition.Properties.ContainsKey("firstName"));
-        Assert.True(definition.Properties.ContainsKey("email"));
-        Assert.True(definition.Properties.ContainsKey("age"));
+        Assert.Equal(3, definition.Properties?.Count);
+        Assert.True(definition.Properties?.ContainsKey("firstName"));
+        Assert.True(definition.Properties?.ContainsKey("email"));
+        Assert.True(definition.Properties?.ContainsKey("age"));
     }
 
     [Fact]
     public void JsonValidator_MaxLength_FailsWhenTooLong()
     {
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(TestJson);
+
+        var definition = TestJson.Load();
         var validator = new JsonValidator<TestModel>(definition);
 
         var result = validator.Validate(new TestModel
@@ -166,7 +162,7 @@ public class JsonValidatorTests
         });
 
         Assert.False(result.IsValid);
-        Assert.Contains(result.Errors, e => e.ErrorMessage == "First name too long.");
+        Assert.Contains(result.Errors, e => string.Equals(e.ErrorMessage, "First name too long.", StringComparison.InvariantCultureIgnoreCase));
     }
 
     [Fact]
@@ -185,9 +181,7 @@ public class JsonValidatorTests
         }
         """;
 
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(json);
-
+        var definition = json.Load();
         Assert.Throws<InvalidOperationException>(() => new JsonValidator<TestModel>(definition));
     }
 
@@ -207,8 +201,8 @@ public class JsonValidatorTests
         }
         """;
 
-        var loader = new JsonValidationDefinitionLoader();
-        var definition = loader.Load(json);
+
+        var definition = json.Load();
 
         Assert.Throws<InvalidOperationException>(() => new JsonValidator<TestModel>(definition));
     }

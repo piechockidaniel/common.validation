@@ -23,5 +23,5 @@ public sealed class ValidationDefinition
     /// Gets or sets the property validation definitions keyed by property name.
     /// </summary>
     [JsonPropertyName("properties")]
-    public Dictionary<string, PropertyDefinition> Properties { get; set; } = new();
+    public IDictionary<string, PropertyDefinition>? Properties { get; set; }
 }

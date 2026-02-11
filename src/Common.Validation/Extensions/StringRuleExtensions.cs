@@ -9,10 +9,10 @@ namespace Common.Validation.Extensions;
 public static partial class StringRuleExtensions
 {
     // Precompiled regex patterns for common validations
-    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled)]
+    [GeneratedRegex(@"^[^@\s]+@[^@\s]+\.[^@\s]+$", RegexOptions.IgnoreCase | RegexOptions.Compiled, matchTimeoutMilliseconds: 250)]
     private static partial Regex EmailRegex();
 
-    [GeneratedRegex(@"^\+?[\d\s\-\(\)]{7,20}$", RegexOptions.Compiled)]
+    [GeneratedRegex(@"^\+?[\d\s\-\(\)]{7,20}$", RegexOptions.Compiled, matchTimeoutMilliseconds: 250)]
     private static partial Regex PhoneRegex();
 
     /// <summary>

@@ -12,7 +12,7 @@
 }
 
 @code {
-    private IReadOnlyList<ValidationFailure> _messages = Array.Empty<ValidationFailure>();
+    private IReadOnlyList<ValidationFailure> _messages = [];
 
     /// <summary>
     /// The validation result to check for messages.
@@ -36,14 +36,14 @@
     {
         if (Result is null || Result.IsValid)
         {
-            _messages = Array.Empty<ValidationFailure>();
+            _messages = [];
             return;
         }
 
         var name = PropertyName ?? ResolvePropertyName();
         if (name is null)
         {
-            _messages = Array.Empty<ValidationFailure>();
+            _messages = [];
             return;
         }
 

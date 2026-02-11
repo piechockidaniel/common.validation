@@ -19,7 +19,7 @@ public class ValidationResult
     /// <summary>
     /// Creates a new empty (valid) <see cref="ValidationResult"/>.
     /// </summary>
-    public ValidationResult() : this(Enumerable.Empty<ValidationFailure>()) { }
+    public ValidationResult() : this([]) { }
 
     /// <summary>
     /// Gets a value indicating whether the validation was successful (no errors).

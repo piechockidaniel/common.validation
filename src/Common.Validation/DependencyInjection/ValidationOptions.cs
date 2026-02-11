@@ -23,5 +23,5 @@ public class ValidationOptions
     /// Gets or sets paths to directories or files containing JSON validation definitions.
     /// Definitions will be loaded and registered as validators automatically.
     /// </summary>
-    public List<string> JsonDefinitionPaths { get; set; } = [];
+    public IList<string>? JsonDefinitionPaths { get; set; }
 }
