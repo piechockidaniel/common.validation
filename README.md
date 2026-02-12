@@ -28,6 +28,13 @@ An interoperable, multi-layer validation framework for .NET 10 and TypeScript. D
   - [Assembly Scanning](#assembly-scanning)
   - [Validator Factory](#validator-factory)
 - [Property-Level Validation](#property-level-validation)
+- [Standalone Value Validation](#standalone-value-validation)
+  - [Class-Based Value Validators](#class-based-value-validators)
+  - [Inline Factory](#inline-factory)
+  - [Standalone Rules & Modifiers](#standalone-rules--modifiers)
+  - [Layer Support in Standalone Mode](#layer-support-in-standalone-mode)
+  - [Value-Based Conditions](#value-based-conditions)
+  - [When to Use Standalone vs Object Validation](#when-to-use-standalone-vs-object-validation)
 - [Blazor Integration](#blazor-integration)
   - [Components](#components)
   - [EditContext Integration](#editcontext-integration)
@@ -615,6 +622,271 @@ var result = validator.ValidateProperty(model, x => x.FirstName, context);
 
 ---
 
+## Standalone Value Validation
+
+Sometimes you need to validate a value on its own — without embedding it in a model class, without an `AbstractValidator<T>`, and without any parent object at all. Common.Validation provides a standalone value validation system that mirrors the full fluent API but operates directly on a single value.
+
+**Why standalone?**
+
+- **Reusable rules.** Define "what a valid email looks like" once; use it across REST models, DTOs, Blazor form fields, and TypeScript.
+- **No container coupling.** A phone number validator should not care whether the phone lives on a `Person`, an `Order`, or a raw `string` from a form input.
+- **Client-side friendly.** Standalone validators map naturally to single-field validation in Blazor or TypeScript, where you often receive a raw value rather than a full object.
+- **Composable.** Standalone validators can be invoked inside object validators via `.Must()`, or composed with `ValidationResult.Combine()`.
+
+### Class-Based Value Validators
+
+Inherit from `ValueValidator<TProperty>` to create a reusable, named validator:
+
+```csharp
+using Common.Validation.Core;
+using Common.Validation.Extensions;
+
+public class EmailValidator : ValueValidator<string>
+{
+    public EmailValidator() : base("Email")
+    {
+        Check()
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("Must be a valid email address.")
+            .MaxLength(255).WithMessage("Email is too long.");
+    }
+}
+```
+
+Use it — no parent object, no model class:
+
+```csharp
+var validator = new EmailValidator();
+
+var result = validator.Validate("user@example.com");
+// result.IsValid == true
+
+var invalid = validator.Validate("not-an-email");
+// invalid.IsValid == false
+// invalid.Errors[0].ErrorMessage == "Must be a valid email address."
+// invalid.Errors[0].PropertyName == "Email"
+```
+
+You can define validators for any type:
+
+```csharp
+public class AgeValidator : ValueValidator<int>
+{
+    public AgeValidator() : base("Age")
+    {
+        Check()
+            .GreaterThanOrEqual(0).WithMessage("Age cannot be negative.")
+            .LessThanOrEqual(150).WithMessage("Age is unrealistic.");
+    }
+}
+
+public class PasswordStrengthValidator : ValueValidator<string>
+{
+    public PasswordStrengthValidator() : base("Password")
+    {
+        Check()
+            .NotEmpty().WithMessage("Password is required.")
+            .MinLength(8).WithMessage("Must be at least 8 characters.")
+            .Matches(@"[A-Z]").WithMessage("Must contain an uppercase letter.")
+                .WithSeverity(Severity.AtOwnRisk)
+            .Matches(@"\d").WithMessage("Must contain a digit.")
+                .WithSeverity(Severity.AtOwnRisk);
+    }
+}
+```
+
+### Inline Factory
+
+For quick, ad-hoc validation without a dedicated class, use `ValueValidator.Create<T>()`:
+
+```csharp
+var phoneValidator = ValueValidator.Create<string>(
+    configure: b => b
+        .NotEmpty().WithMessage("Phone number is required.")
+        .PhoneNumber().WithMessage("Not a valid phone format."),
+    propertyName: "Phone");
+
+var result = phoneValidator.Validate("+48 123 456 789");
+// result.IsValid == true
+```
+
+```csharp
+var percentValidator = ValueValidator.Create<decimal>(
+    configure: b => b
+        .InclusiveBetween(0m, 100m).WithMessage("Must be a percentage (0–100)."),
+    propertyName: "Discount");
+
+var result = percentValidator.Validate(105m);
+// result.IsValid == false
+```
+
+When you omit `propertyName`, it defaults to the type name (e.g., `"String"`, `"Int32"`):
+
+```csharp
+var notEmpty = ValueValidator.Create<string>(b => b.NotEmpty());
+var result = notEmpty.Validate("");
+// result.Errors[0].PropertyName == "String"
+```
+
+### Standalone Rules & Modifiers
+
+Standalone validators support the same rules and modifiers as object validators:
+
+**Common rules** (any type): `.NotNull()`, `.Null()`, `.NotEmpty()`, `.Empty()`, `.Equal(value)`, `.NotEqual(value)`, `.Must(predicate, msg)`
+
+**String rules:** `.MinLength(n)`, `.MaxLength(n)`, `.Length(min, max)`, `.Matches(pattern)`, `.EmailAddress()`, `.PhoneNumber()`
+
+**Comparison rules** (`IComparable<T>`): `.GreaterThan(n)`, `.GreaterThanOrEqual(n)`, `.LessThan(n)`, `.LessThanOrEqual(n)`, `.InclusiveBetween(a, b)`
+
+**Modifiers:** `.WithMessage("...")`, `.WithErrorCode("...")`, `.WithSeverity(Severity.X)`, `.WithLayerSeverity("api", Severity.X)`, `.Cascade(CascadeMode.StopOnFirstFailure)`
+
+### Layer Support in Standalone Mode
+
+Standalone validators fully support multi-layer severity overrides:
+
+```csharp
+public class TaxIdValidator : ValueValidator<string>
+{
+    public TaxIdValidator() : base("TaxId")
+    {
+        Check()
+            .NotEmpty().WithMessage("Tax ID is required.")
+            .WithSeverity(Severity.Forbidden)
+            .WithLayerSeverity("api", Severity.Forbidden)
+            .WithLayerSeverity("dto", Severity.AtOwnRisk)
+            .WithLayerSeverity("entity", Severity.NotRecommended);
+    }
+}
+
+var validator = new TaxIdValidator();
+
+// Default severity: Forbidden
+var defaultResult = validator.Validate("");
+// defaultResult.Errors[0].Severity == Severity.Forbidden
+
+// API layer: still Forbidden
+var apiResult = validator.Validate("", ValidationContext.ForLayer("api"));
+// apiResult.Errors[0].Severity == Severity.Forbidden
+
+// Entity layer: just a recommendation
+var entityResult = validator.Validate("", ValidationContext.ForLayer("entity"));
+// entityResult.Errors[0].Severity == Severity.NotRecommended
+```
+
+### Value-Based Conditions
+
+In object validators, `When()` / `Unless()` receive the parent instance. In standalone mode, they receive the value itself:
+
+```csharp
+var validator = ValueValidator.Create<string>(
+    configure: b => b
+        // Only validate length when the value is not null
+        .When(value => value is not null)
+        .MinLength(3).WithMessage("Too short — must be at least 3 characters.")
+        .MaxLength(50).WithMessage("Too long — at most 50 characters."),
+    propertyName: "Code");
+
+validator.Validate(null!).IsValid;   // true  — condition skipped
+validator.Validate("ab").IsValid;    // false — MinLength fails
+validator.Validate("abc").IsValid;   // true
+```
+
+```csharp
+var validator = ValueValidator.Create<string>(
+    configure: b => b
+        // Skip validation when the value is null (optional field)
+        .Unless(value => value is null)
+        .EmailAddress().WithMessage("Not a valid email."),
+    propertyName: "SecondaryEmail");
+
+validator.Validate(null!).IsValid;          // true  — skipped
+validator.Validate("bad").IsValid;          // false — checked
+validator.Validate("a@b.com").IsValid;      // true  — valid
+```
+
+### Multiple Check Chains
+
+Call `Check()` multiple times inside a class-based validator to create independent rule chains. Combined with `CascadeMode.StopOnFirstFailure` on the validator, you can control the flow precisely:
+
+```csharp
+public class StrictCodeValidator : ValueValidator<string>
+{
+    public StrictCodeValidator() : base("Code")
+    {
+        CascadeMode = CascadeMode.StopOnFirstFailure;
+
+        Check().NotNull().WithMessage("Code is required.");
+        Check().MinLength(5).WithMessage("Code is too short.");
+        Check().Matches(@"^[A-Z0-9]+$").WithMessage("Code must be uppercase alphanumeric.");
+    }
+}
+
+var validator = new StrictCodeValidator();
+var result = validator.Validate(null!);
+// result.Errors.Count == 1  (stopped after "Code is required.")
+```
+
+### Non-Generic Interface
+
+Like `IValidator`, the standalone system provides a non-generic `IValueValidator` interface for DI and runtime scenarios:
+
+```csharp
+IValueValidator validator = new EmailValidator();
+
+Console.WriteLine(validator.ValidatedType);        // System.String
+var result = validator.Validate("test@test.com");   // works with object?
+```
+
+### When to Use Standalone vs Object Validation
+
+| Scenario | Approach |
+|----------|----------|
+| Validate a form field individually | **Standalone** (`ValueValidator<string>`) |
+| Validate an API request model | **Object** (`AbstractValidator<T>`) |
+| Reusable "is this a valid email?" check | **Standalone** (`EmailValidator`) |
+| Cross-property rule (end > start date) | **Object** (`.Must((obj, val) => ...)`) |
+| Blazor `@onblur` on a single `<input>` | **Standalone** or `ValidateProperty` |
+| TypeScript single-field validation | **Standalone** (same mental model) |
+| Full model save / submit | **Object** (`AbstractValidator<T>`) |
+| Shared validation logic between models | **Standalone** (compose via `.Must()` or `Combine`) |
+
+### Composing Standalone with Object Validators
+
+Reuse a standalone validator inside an object validator:
+
+```csharp
+var emailValidator = new EmailValidator();
+var phoneValidator = ValueValidator.Create<string>(
+    b => b.NotEmpty().PhoneNumber(),
+    propertyName: "Phone");
+
+public class ContactValidator : AbstractValidator<Contact>
+{
+    public ContactValidator()
+    {
+        RuleFor(x => x.Email)
+            .Must(value => emailValidator.Validate(value).IsValid,
+                  "Must be a valid email address.");
+
+        RuleFor(x => x.Phone)
+            .Must(value => phoneValidator.Validate(value).IsValid,
+                  "Must be a valid phone number.");
+    }
+}
+```
+
+Or merge results explicitly:
+
+```csharp
+var emailResult = emailValidator.Validate(formData.Email);
+var phoneResult = phoneValidator.Validate(formData.Phone);
+var combined = ValidationResult.Combine(emailResult, phoneResult);
+
+if (combined.HasForbidden) { /* ... */ }
+```
+
+---
+
 ## Blazor Integration
 
 ### Components
@@ -721,8 +993,11 @@ common.validation/
     Common.Validation/                   # Core NuGet package
       Core/                              #   IValidator, AbstractValidator, Severity,
                                          #   ValidationResult, CascadeMode, ValidationContext
+                                         #   IValueValidator, ValueValidator (standalone)
       Rules/                             #   IRuleBuilder, IValidationRule, PropertyRule
+                                         #   IValueRuleBuilder, IValueValidationRule, ValueRule (standalone)
       Extensions/                        #   Fluent API (NotEmpty, MaxLength, WithSeverity, etc.)
+                                         #   Standalone extensions (*ValueRule* variants)
       Layers/                            #   ValidationLayerAttribute
       Json/                              #   JsonValidator, definition models, loader
         Registry/                        #   IValidatorTypeRegistry, built-in checks
@@ -735,7 +1010,7 @@ common.validation/
       src/                              #   Validator, types, built-in rules
       schema/                           #   JSON Schema for IDE autocompletion
   tests/
-    Common.Validation.Tests/             # xUnit tests (117 tests)
+    Common.Validation.Tests/             # xUnit tests (213 tests)
   demo/
     Common.Validation.Demo/              # Console demo (fluent, layers, JSON, DI)
     Common.Validation.Demo.Blazor/       # Blazor interactive demo
@@ -836,6 +1111,59 @@ public IActionResult UpdateUser(Guid id, [FromBody] Dictionary<string, object?> 
 
 This avoids validating untouched fields and keeps rules consistent with the shared JSON definition.
 
+### Reusable Field Validators Across Multiple Models
+
+Define validation once for a data concept, reuse it in every model that contains it:
+
+```csharp
+// Define once
+public class EmailValidator : ValueValidator<string>
+{
+    public EmailValidator() : base("Email")
+    {
+        Check()
+            .NotEmpty().WithMessage("Email is required.")
+            .EmailAddress().WithMessage("Must be a valid email address.")
+            .MaxLength(255);
+    }
+}
+
+public class PhoneValidator : ValueValidator<string>
+{
+    public PhoneValidator() : base("Phone")
+    {
+        Check()
+            .NotEmpty().WithMessage("Phone is required.")
+            .PhoneNumber().WithMessage("Must be a valid phone number.");
+    }
+}
+
+// Reuse in object validators
+var email = new EmailValidator();
+var phone = new PhoneValidator();
+
+public class CustomerValidator : AbstractValidator<Customer>
+{
+    public CustomerValidator()
+    {
+        RuleFor(x => x.Email)
+            .Must(v => email.Validate(v).IsValid, "Invalid email.");
+
+        RuleFor(x => x.Phone)
+            .Must(v => phone.Validate(v).IsValid, "Invalid phone.");
+    }
+}
+
+public class EmployeeValidator : AbstractValidator<Employee>
+{
+    public EmployeeValidator()
+    {
+        RuleFor(x => x.WorkEmail)
+            .Must(v => email.Validate(v).IsValid, "Invalid work email.");
+    }
+}
+```
+
 ### Domain Entity Invariants
 
 Validate invariants within domain entities themselves, using the non-generic `IValidator` interface for polymorphic dispatch:
@@ -877,7 +1205,7 @@ The project is under active development. Planned directions include:
 - **Validation profiles** -- named rule sets within a single validator, selectable at validation time (e.g., "create" vs. "update" profiles).
 - **OpenAPI integration** -- auto-generate `x-validation` metadata in Swagger/OpenAPI specs from JSON definitions.
 - **React / Vue adapters** -- framework-specific wrappers around the TypeScript client for seamless form integration.
-- **Rule composition** -- `Include()` and `InheritRulesFrom()` for composing validators from reusable fragments.
+- **Rule composition** -- `Include()` and `InheritRulesFrom()` for composing validators from reusable fragments. Automatic bridging of `IValueValidator<T>` into `AbstractValidator<T>` rules via a dedicated extension method.
 - **Diagnostic analyzers** -- Roslyn analyzers to catch common mistakes at compile time (e.g., forgetting `.WithMessage()` after a rule).
 
 ---
