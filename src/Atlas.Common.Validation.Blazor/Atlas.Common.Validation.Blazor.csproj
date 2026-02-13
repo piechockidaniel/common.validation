@@ -1,0 +1,44 @@
+﻿<Project Sdk="Microsoft.NET.Sdk.Razor">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Atlas.Common.Validation.Blazor</RootNamespace>
+    <AssemblyName>Atlas.Common.Validation.Blazor</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+	<PropertyGroup>
+		<PackageId>Atlas.Common.Validation.Blazor</PackageId>
+		<Description>Interoperable validation framework with fluent API, JSON-based definitions, multi-layer severity, and IoC support for .NET 8.</Description>
+		<PackageTags>blazor;validation;fluent;json;dotnet;severity;layers;ioc</PackageTags>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<IsPackable>true</IsPackable>
+		<AssemblyTitle>Common Validators</AssemblyTitle>
+		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+		<Title>Atlas Validation Framework</Title>
+		<Company>SCB</Company>
+		<Copyright>SCB 2026</Copyright>
+		<RepositoryType>git</RepositoryType>
+		<NeutralLanguage>en</NeutralLanguage>
+	</PropertyGroup>
+	<ItemGroup>
+		<None Include="..\..\README.md" Link="README.md">
+			<Pack>True</Pack>
+			<PackagePath>\</PackagePath>
+		</None>
+	</ItemGroup>
+
+  <ItemGroup>
+    <SupportedPlatform Include="browser" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <FrameworkReference Include="Microsoft.AspNetCore.App" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\Atlas.Common.Validation\Atlas.Common.Validation.csproj" />
+  </ItemGroup>
+
+</Project>

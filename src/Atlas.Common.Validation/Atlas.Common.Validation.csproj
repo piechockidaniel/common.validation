@@ -1,0 +1,36 @@
+﻿ <Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net8.0</TargetFramework>
+    <RootNamespace>Atlas.Common.Validation</RootNamespace>
+    <AssemblyName>Atlas.Common.Validation</AssemblyName>
+    <GenerateDocumentationFile>true</GenerateDocumentationFile>
+  </PropertyGroup>
+
+  <!-- NuGet package metadata -->
+  <PropertyGroup>
+    <PackageId>Atlas.Common.Validation</PackageId>
+    <Description>Interoperable validation framework with fluent API, JSON-based definitions, multi-layer severity, and IoC support for .NET 8.</Description>
+    <PackageTags>validation;fluent;json;dotnet;severity;layers;ioc</PackageTags>
+    <PackageReadmeFile>README.md</PackageReadmeFile>
+    <IsPackable>true</IsPackable>
+    <AssemblyTitle>Blazor Common Validators</AssemblyTitle>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Atlas Validation Framework for Blazor projects</Title>
+    <Company>SCB</Company>
+    <Copyright>SCB 2026</Copyright>
+    <RepositoryType>git</RepositoryType>
+    <NeutralLanguage>en</NeutralLanguage>
+  </PropertyGroup>
+  <ItemGroup>
+    <None Include="..\..\README.md" Link="README.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" Version="8.0.2" />
+  </ItemGroup>
+
+</Project>

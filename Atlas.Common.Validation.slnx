@@ -1,0 +1,16 @@
+<Solution>
+  <Folder Name="/demo/">
+    <Project Path="demo/Atlas.Common.Validation.Demo.Blazor/Atlas.Common.Validation.Demo.Blazor.csproj" />
+    <Project Path="demo/Atlas.Common.Validation.Demo/Atlas.Common.Validation.Demo.csproj" />
+  </Folder>
+  <Folder Name="/src/">
+    <File Path="demo/Atlas.Common.Validation.Demo.Blazor/appsettings.Development.json" />
+    <File Path="demo/Atlas.Common.Validation.Demo.Blazor/appsettings.json" />
+    <Project Path="src/Atlas.Common.Validation.Blazor/Atlas.Common.Validation.Blazor.csproj" />
+    <Project Path="src/Atlas.Common.Validation/Atlas.Common.Validation.csproj" />
+  </Folder>
+  <Folder Name="/tests/">
+    <File Path="demo/Atlas.Common.Validation.Demo.Blazor/appsettings.json" />
+    <Project Path="tests/Atlas.Common.Validation.Tests/Atlas.Common.Validation.Tests.csproj" />
+  </Folder>
+</Solution>

@@ -1,98 +1,98 @@
-# Common.Validation
+# Atlas.Common.Validation
 
-An interoperable, multi-layer validation framework for .NET 10 and TypeScript. Define validation rules once -- in C# or JSON -- and enforce them across API models, DTOs, database entities, and frontend forms with per-layer severity control.
+Interoperacyjny, wielowarstwowy framework walidacyjny dla .NET 10 i TypeScript. Definiuj reguły walidacji raz -- w C# lub JSON -- i egzekwuj je w modelach API, DTO, encjach bazodanowych oraz formularzach frontendowych z kontrolą istotności na poziomie warstw.
 
-## Table of Contents
+## Spis treści
 
-- [Key Concepts](#key-concepts)
-- [Getting Started](#getting-started)
-  - [Installation](#installation)
-  - [Your First Validator](#your-first-validator)
-  - [Interpreting Results](#interpreting-results)
-- [Fluent API Reference](#fluent-api-reference)
-  - [Built-in Rules](#built-in-rules)
-  - [Custom Rules](#custom-rules)
-  - [Conditions](#conditions)
-  - [Cascade Mode](#cascade-mode)
-- [Multi-Layer Severity](#multi-layer-severity)
-  - [The Problem](#the-problem)
-  - [Layer Attributes](#layer-attributes)
-  - [Layer-Aware Rules](#layer-aware-rules)
-  - [Explicit Context](#explicit-context)
-- [JSON-Based Validation](#json-based-validation)
-  - [Schema Overview](#schema-overview)
-  - [Loading Definitions](#loading-definitions)
-  - [Custom Validator Types](#custom-validator-types)
-- [Dependency Injection](#dependency-injection)
-  - [Basic Setup](#basic-setup)
-  - [Assembly Scanning](#assembly-scanning)
-  - [Validator Factory](#validator-factory)
-- [Property-Level Validation](#property-level-validation)
-- [Standalone Value Validation](#standalone-value-validation)
-  - [Class-Based Value Validators](#class-based-value-validators)
-  - [Inline Factory](#inline-factory)
-  - [Standalone Rules & Modifiers](#standalone-rules--modifiers)
-  - [Layer Support in Standalone Mode](#layer-support-in-standalone-mode)
-  - [Value-Based Conditions](#value-based-conditions)
-  - [When to Use Standalone vs Object Validation](#when-to-use-standalone-vs-object-validation)
-- [Blazor Integration](#blazor-integration)
-  - [Components](#components)
-  - [EditContext Integration](#editcontext-integration)
-- [TypeScript Client](#typescript-client)
-- [Architecture](#architecture)
-- [Use Cases](#use-cases)
-- [Roadmap](#roadmap)
-- [License](#license)
+- [Kluczowe koncepcje](#kluczowe-koncepcje)
+- [Pierwsze kroki](#pierwsze-kroki)
+  - [Instalacja](#instalacja)
+  - [Twój pierwszy walidator](#twój-pierwszy-walidator)
+  - [Interpretacja wyników](#interpretacja-wyników)
+- [Fluent API -- dokumentacja](#fluent-api----dokumentacja)
+  - [Wbudowane reguły](#wbudowane-reguły)
+  - [Reguły niestandardowe](#reguły-niestandardowe)
+  - [Warunki](#warunki)
+  - [Tryb kaskadowy](#tryb-kaskadowy)
+- [Wielowarstwowa istotność](#wielowarstwowa-istotność)
+  - [Problem](#problem)
+  - [Atrybuty warstw](#atrybuty-warstw)
+  - [Reguły uwzględniające warstwy](#reguły-uwzględniające-warstwy)
+  - [Jawny kontekst](#jawny-kontekst)
+- [Walidacja oparta na JSON](#walidacja-oparta-na-json)
+  - [Przegląd schematu](#przegląd-schematu)
+  - [Wczytywanie definicji](#wczytywanie-definicji)
+  - [Niestandardowe typy walidatorów](#niestandardowe-typy-walidatorów)
+- [Wstrzykiwanie zależności](#wstrzykiwanie-zależności)
+  - [Podstawowa konfiguracja](#podstawowa-konfiguracja)
+  - [Skanowanie assembly](#skanowanie-assembly)
+  - [Fabryka walidatorów](#fabryka-walidatorów)
+- [Walidacja na poziomie właściwości](#walidacja-na-poziomie-właściwości)
+- [Samodzielna walidacja wartości](#samodzielna-walidacja-wartości)
+  - [Walidatory wartości oparte na klasach](#walidatory-wartości-oparte-na-klasach)
+  - [Fabryka inline](#fabryka-inline)
+  - [Reguły i modyfikatory w trybie samodzielnym](#reguły-i-modyfikatory-w-trybie-samodzielnym)
+  - [Obsługa warstw w trybie samodzielnym](#obsługa-warstw-w-trybie-samodzielnym)
+  - [Warunki oparte na wartości](#warunki-oparte-na-wartości)
+  - [Kiedy używać walidacji samodzielnej a obiektowej](#kiedy-używać-walidacji-samodzielnej-a-obiektowej)
+- [Integracja z Blazor](#integracja-z-blazor)
+  - [Komponenty](#komponenty)
+  - [Integracja z EditContext](#integracja-z-editcontext)
+- [Klient TypeScript](#klient-typescript)
+- [Architektura](#architektura)
+- [Przypadki użycia](#przypadki-użycia)
+- [Plan rozwoju](#plan-rozwoju)
+- [Licencja](#licencja)
 
 ---
 
-## Key Concepts
+## Kluczowe koncepcje
 
-Common.Validation is built around three ideas that distinguish it from other validation libraries:
+Common.Validation opiera się na trzech ideach, które wyróżniają go spośród innych bibliotek walidacyjnych:
 
-**Severity is not binary.** Validation failures are not just "valid" or "invalid". Each failure carries a `Severity`:
+**Istotność nie jest binarna.** Niepowodzenia walidacji to nie tylko "poprawne" lub "niepoprawne". Każde niepowodzenie niesie ze sobą poziom istotności (`Severity`):
 
-| Severity | Meaning | Typical Action |
+| Istotność | Znaczenie | Typowa akcja |
 |---|---|---|
-| `Forbidden` | The value is invalid. The operation must not proceed. | Block the request. |
-| `AtOwnRisk` | The value is risky. The caller accepts responsibility. | Warn the user, log it, proceed. |
-| `NotRecommended` | The value is technically valid but not ideal. | Show an informational hint. |
+| `Forbidden` | Wartość jest nieprawidłowa. Operacja nie może być kontynuowana. | Zablokuj żądanie. |
+| `AtOwnRisk` | Wartość jest ryzykowna. Wywołujący przyjmuje odpowiedzialność. | Ostrzeż użytkownika, zaloguj, kontynuuj. |
+| `NotRecommended` | Wartość jest technicznie poprawna, ale nie idealna. | Wyświetl informacyjną wskazówkę. |
 
-**Layers change severity.** The same validation rule can produce different severities depending on where it runs. A phone number might be `Forbidden` to omit at the API layer but merely `NotRecommended` in a database entity.
+**Warstwy zmieniają istotność.** Ta sama reguła walidacji może generować różne poziomy istotności w zależności od tego, gdzie jest uruchamiana. Pominięcie numeru telefonu może być `Forbidden` na warstwie API, ale jedynie `NotRecommended` w encji bazodanowej.
 
-**One definition, many runtimes.** Rules defined in a shared JSON schema are consumed by both the C# backend and TypeScript frontend, ensuring client-server parity without duplicating logic.
+**Jedna definicja, wiele środowisk uruchomieniowych.** Reguły zdefiniowane we wspólnym schemacie JSON są konsumowane zarówno przez backend C#, jak i frontend TypeScript, zapewniając spójność klient-serwer bez duplikowania logiki.
 
 ---
 
-## Getting Started
+## Pierwsze kroki
 
-### Installation
+### Instalacja
 
-Add the NuGet package to your project:
-
-```bash
-dotnet add package Common.Validation
-```
-
-For Blazor components:
+Dodaj pakiet NuGet do swojego projektu:
 
 ```bash
-dotnet add package Common.Validation.Blazor
+dotnet add package Atlas.Common.Validation
 ```
 
-For TypeScript/JavaScript:
+Dla komponentów Blazor:
 
 ```bash
-npm install common-validation
+dotnet add package Atlas.Common.Validation.Blazor
 ```
 
-### Your First Validator
+Dla TypeScript/JavaScript:
 
-Create a model and a validator:
+```bash
+npm install atlas-common-validation
+```
+
+### Twój pierwszy walidator
+
+Utwórz model i walidator:
 
 ```csharp
-using Common.Validation.Core;
-using Common.Validation.Extensions;
+using Atlas.Common.Validation.Core;
+using Atlas.Common.Validation.Extensions;
 
 public class CreateOrderRequest
 {
@@ -107,24 +107,24 @@ public class CreateOrderValidator : AbstractValidator<CreateOrderRequest>
     public CreateOrderValidator()
     {
         RuleFor(x => x.CustomerName)
-            .NotEmpty().WithMessage("Customer name is required.")
-            .MaxLength(200).WithMessage("Name is too long.");
+            .NotEmpty().WithMessage("Nazwa klienta jest wymagana.")
+            .MaxLength(200).WithMessage("Nazwa jest za długa.");
 
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Not a valid email address.");
+            .NotEmpty().WithMessage("Email jest wymagany.")
+            .EmailAddress().WithMessage("Nieprawidłowy adres email.");
 
         RuleFor(x => x.Total)
-            .GreaterThan(0m).WithMessage("Order total must be positive.");
+            .GreaterThan(0m).WithMessage("Suma zamówienia musi być dodatnia.");
 
         RuleFor(x => x.PromoCode)
-            .MaxLength(20).WithMessage("Promo code is too long.")
+            .MaxLength(20).WithMessage("Kod promocyjny jest za długi.")
             .WithSeverity(Severity.NotRecommended);
     }
 }
 ```
 
-Use it:
+Użycie:
 
 ```csharp
 var validator = new CreateOrderValidator();
@@ -137,26 +137,26 @@ var result = validator.Validate(new CreateOrderRequest
 
 if (result.HasForbidden)
 {
-    // Block: mandatory fields are missing or invalid
+    // Blokada: obowiązkowe pola są puste lub nieprawidłowe
     foreach (var error in result.BySeverity(Severity.Forbidden))
-        Console.WriteLine($"  ERROR: {error.PropertyName} - {error.ErrorMessage}");
+        Console.WriteLine($"  BŁĄD: {error.PropertyName} - {error.ErrorMessage}");
 }
 ```
 
-### Interpreting Results
+### Interpretacja wyników
 
-`ValidationResult` provides several ways to inspect failures:
+`ValidationResult` udostępnia kilka sposobów inspekcji niepowodzeń:
 
 ```csharp
-result.IsValid              // true if zero failures
-result.HasForbidden         // any blocking errors?
-result.HasAtOwnRisk         // any risk warnings?
-result.HasNotRecommended    // any soft hints?
-result.Errors               // all failures as IReadOnlyList<ValidationFailure>
-result.BySeverity(severity) // filter by severity level
+result.IsValid              // true jeśli brak niepowodzeń
+result.HasForbidden         // jakiekolwiek błędy blokujące?
+result.HasAtOwnRisk         // jakiekolwiek ostrzeżenia o ryzyku?
+result.HasNotRecommended    // jakiekolwiek miękkie wskazówki?
+result.Errors               // wszystkie niepowodzenia jako IReadOnlyList<ValidationFailure>
+result.BySeverity(severity) // filtrowanie według poziomu istotności
 ```
 
-You can combine results from multiple validators:
+Możesz łączyć wyniki z wielu walidatorów:
 
 ```csharp
 var combined = ValidationResult.Combine(
@@ -167,90 +167,90 @@ var combined = ValidationResult.Combine(
 
 ---
 
-## Fluent API Reference
+## Fluent API -- dokumentacja
 
-### Built-in Rules
+### Wbudowane reguły
 
-**Common rules** (any property type):
+**Reguły ogólne** (dowolny typ właściwości):
 
-| Method | Description |
+| Metoda | Opis |
 |---|---|
-| `.NotNull()` | Value must not be null |
-| `.Null()` | Value must be null |
-| `.NotEmpty()` | String not null/whitespace, collection not empty |
-| `.Empty()` | Inverse of NotEmpty |
-| `.Equal(value)` | Must equal the given value |
-| `.NotEqual(value)` | Must not equal the given value |
-| `.Must(predicate, msg)` | Custom predicate |
+| `.NotNull()` | Wartość nie może być null |
+| `.Null()` | Wartość musi być null |
+| `.NotEmpty()` | String nie null/whitespace, kolekcja niepusta |
+| `.Empty()` | Odwrotność NotEmpty |
+| `.Equal(value)` | Musi być równa podanej wartości |
+| `.NotEqual(value)` | Nie może być równa podanej wartości |
+| `.Must(predicate, msg)` | Niestandardowy predykat |
 
-**String rules:**
+**Reguły tekstowe:**
 
-| Method | Description |
+| Metoda | Opis |
 |---|---|
-| `.MinLength(n)` | At least n characters |
-| `.MaxLength(n)` | At most n characters |
-| `.Length(min, max)` | Between min and max characters |
-| `.Matches(pattern)` | Matches a regex pattern |
-| `.EmailAddress()` | Valid email format |
-| `.PhoneNumber()` | Valid phone format |
+| `.MinLength(n)` | Co najmniej n znaków |
+| `.MaxLength(n)` | Co najwyżej n znaków |
+| `.Length(min, max)` | Między min a max znaków |
+| `.Matches(pattern)` | Pasuje do wzorca regex |
+| `.EmailAddress()` | Prawidłowy format email |
+| `.PhoneNumber()` | Prawidłowy format telefonu |
 
-**Comparison rules** (for `IComparable<T>`):
+**Reguły porównawcze** (dla `IComparable<T>`):
 
-| Method | Description |
+| Metoda | Opis |
 |---|---|
-| `.GreaterThan(n)` | Strictly greater than n |
-| `.GreaterThanOrEqual(n)` | Greater than or equal to n |
-| `.LessThan(n)` | Strictly less than n |
-| `.LessThanOrEqual(n)` | Less than or equal to n |
-| `.InclusiveBetween(a, b)` | Between a and b (inclusive) |
+| `.GreaterThan(n)` | Ściśle większa niż n |
+| `.GreaterThanOrEqual(n)` | Większa lub równa n |
+| `.LessThan(n)` | Ściśle mniejsza niż n |
+| `.LessThanOrEqual(n)` | Mniejsza lub równa n |
+| `.InclusiveBetween(a, b)` | Między a i b (włącznie) |
 
-**Modifiers** (chain after any rule):
+**Modyfikatory** (łańcuchowo po dowolnej regule):
 
-| Method | Description |
+| Metoda | Opis |
 |---|---|
-| `.WithMessage("...")` | Custom error message |
-| `.WithErrorCode("...")` | Programmatic error code |
-| `.WithSeverity(Severity.X)` | Set default severity |
-| `.WithLayerSeverity("api", Severity.X)` | Layer-specific severity |
-| `.Cascade(CascadeMode.StopOnFirstFailure)` | Stop on first failure for this property |
+| `.WithMessage("...")` | Niestandardowy komunikat błędu |
+| `.WithErrorCode("...")` | Programistyczny kod błędu |
+| `.WithSeverity(Severity.X)` | Ustaw domyślną istotność |
+| `.WithLayerSeverity("api", Severity.X)` | Istotność specyficzna dla warstwy |
+| `.Cascade(CascadeMode.StopOnFirstFailure)` | Zatrzymaj przy pierwszym niepowodzeniu dla tej właściwości |
 
-### Custom Rules
+### Reguły niestandardowe
 
-Use `.Must()` for inline predicates:
+Użyj `.Must()` dla predykatów inline:
 
 ```csharp
 RuleFor(x => x.StartDate)
-    .Must(date => date >= DateTime.Today, "Start date must be in the future.");
+    .Must(date => date >= DateTime.Today, "Data rozpoczęcia musi być w przyszłości.");
 ```
 
-Access the parent object for cross-property validation:
+Dostęp do obiektu nadrzędnego w celu walidacji międzywłaściwościowej:
 
 ```csharp
 RuleFor(x => x.EndDate)
     .Must((order, endDate) => endDate > order.StartDate,
-          "End date must be after start date.");
+          "Data zakończenia musi być po dacie rozpoczęcia.");
 ```
 
-### Conditions
+### Warunki
 
-Apply rules conditionally:
+Stosuj reguły warunkowo:
 
 ```csharp
 RuleFor(x => x.CompanyName)
     .When(x => x.CustomerType == CustomerType.Business)
-    .NotEmpty().WithMessage("Company name is required for business customers.");
+    .NotEmpty().WithMessage("Nazwa firmy jest wymagana dla klientów biznesowych.");
 
 RuleFor(x => x.PersonalId)
     .Unless(x => x.CustomerType == CustomerType.Business)
-    .NotEmpty().WithMessage("Personal ID is required for individual customers.");
+    .NotEmpty().WithMessage("PESEL jest wymagany dla klientów indywidualnych.");
 ```
 
-### Cascade Mode
+### Tryb kaskadowy
 
-Control whether validation continues after a failure:
+Kontroluj, czy walidacja kontynuuje po niepowodzeniu:
 
 ```csharp
-// Validator level: stop after the first rule with failures
+// Poziom walidatora: zatrzymaj po pierwszej regule z niepowodzeniami
 public class StrictValidator : AbstractValidator<Order>
 {
     public StrictValidator()
@@ -260,36 +260,36 @@ public class StrictValidator : AbstractValidator<Order>
     }
 }
 
-// Property level: stop checking this property after first failure
+// Poziom właściwości: zatrzymaj sprawdzanie tej właściwości po pierwszym niepowodzeniu
 RuleFor(x => x.Email)
     .Cascade(CascadeMode.StopOnFirstFailure)
-    .NotEmpty().WithMessage("Required.")
-    .EmailAddress().WithMessage("Invalid format.");
-    // If NotEmpty fails, EmailAddress is skipped
+    .NotEmpty().WithMessage("Wymagane.")
+    .EmailAddress().WithMessage("Nieprawidłowy format.");
+    // Jeśli NotEmpty nie przejdzie, EmailAddress zostanie pominięte
 ```
 
 ---
 
-## Multi-Layer Severity
+## Wielowarstwowa istotność
 
-### The Problem
+### Problem
 
-In a typical enterprise application, the same data passes through multiple layers:
+W typowej aplikacji korporacyjnej te same dane przechodzą przez wiele warstw:
 
 ```
-Browser Form  -->  API Controller  -->  Service Layer  -->  Database Entity
+Formularz przeglądarki  -->  Kontroler API  -->  Warstwa serwisowa  -->  Encja bazodanowa
 ```
 
-Each layer has different constraints. An email address might be:
-- **Forbidden** to omit at the API (you can't create a user without one)
-- **AtOwnRisk** at the DTO level (partial updates may skip it)
-- **NotRecommended** at the entity level (legacy records might lack one)
+Każda warstwa ma inne ograniczenia. Adres email może być:
+- **Forbidden** do pominięcia na warstwie API (nie można utworzyć użytkownika bez niego)
+- **AtOwnRisk** na poziomie DTO (częściowe aktualizacje mogą go pomijać)
+- **NotRecommended** na poziomie encji (starsze rekordy mogą go nie mieć)
 
-Common.Validation solves this with per-layer severity overrides.
+Atlas.Common.Validation rozwiązuje to za pomocą nadpisywania istotności na poziomie warstw.
 
-### Layer Attributes
+### Atrybuty warstw
 
-Mark your models with the layer they belong to:
+Oznacz swoje modele warstwą, do której należą:
 
 ```csharp
 using Common.Validation.Layers;
@@ -316,19 +316,19 @@ public class UserEntity
 }
 ```
 
-The attribute is inherited, so base class attributes flow to subclasses:
+Atrybut jest dziedziczony, więc atrybuty klas bazowych są przekazywane do klas pochodnych:
 
 ```csharp
 [ValidationLayer("api")]
 public abstract class ApiModelBase { }
 
 public class UserApiModel : ApiModelBase { }
-// UserApiModel automatically resolves to the "api" layer
+// UserApiModel automatycznie rozpoznaje warstwę "api"
 ```
 
-### Layer-Aware Rules
+### Reguły uwzględniające warstwy
 
-Define rules once with per-layer severity overrides:
+Definiuj reguły raz z nadpisywaniem istotności dla poszczególnych warstw:
 
 ```csharp
 public class UserValidator : AbstractValidator<UserApiModel>
@@ -336,14 +336,14 @@ public class UserValidator : AbstractValidator<UserApiModel>
     public UserValidator()
     {
         RuleFor(x => x.Email)
-            .NotEmpty().WithMessage("Email is required.")
-            .WithSeverity(Severity.Forbidden)               // default
-            .WithLayerSeverity("api", Severity.Forbidden)    // mandatory at API
-            .WithLayerSeverity("dto", Severity.AtOwnRisk)    // risky to skip in DTO
-            .WithLayerSeverity("entity", Severity.NotRecommended); // nice-to-have in DB
+            .NotEmpty().WithMessage("Email jest wymagany.")
+            .WithSeverity(Severity.Forbidden)               // domyślna
+            .WithLayerSeverity("api", Severity.Forbidden)    // obowiązkowy w API
+            .WithLayerSeverity("dto", Severity.AtOwnRisk)    // ryzykowne pominięcie w DTO
+            .WithLayerSeverity("entity", Severity.NotRecommended); // mile widziany w BD
 
         RuleFor(x => x.Phone)
-            .NotEmpty().WithMessage("Phone is recommended.")
+            .NotEmpty().WithMessage("Telefon jest zalecany.")
             .WithSeverity(Severity.AtOwnRisk)
             .WithLayerSeverity("api", Severity.AtOwnRisk)
             .WithLayerSeverity("entity", Severity.NotRecommended);
@@ -351,25 +351,25 @@ public class UserValidator : AbstractValidator<UserApiModel>
 }
 ```
 
-When you call `validator.Validate(instance)`, the layer is automatically resolved from the `[ValidationLayer]` attribute on the model type. No additional configuration needed.
+Gdy wywołujesz `validator.Validate(instance)`, warstwa jest automatycznie rozpoznawana na podstawie atrybutu `[ValidationLayer]` na typie modelu. Dodatkowa konfiguracja nie jest wymagana.
 
-### Explicit Context
+### Jawny kontekst
 
-Override the layer at runtime:
+Nadpisz warstwę w czasie wykonywania:
 
 ```csharp
 var context = ValidationContext.ForLayer("entity");
 var result = validator.Validate(instance, context);
-// Uses "entity" layer severities regardless of the type's attribute
+// Używa istotności warstwy "entity" niezależnie od atrybutu typu
 ```
 
 ---
 
-## JSON-Based Validation
+## Walidacja oparta na JSON
 
-### Schema Overview
+### Przegląd schematu
 
-Define rules in a JSON file that both C# and TypeScript can consume:
+Definiuj reguły w pliku JSON, który może być konsumowany zarówno przez C#, jak i TypeScript:
 
 ```json
 {
@@ -380,13 +380,13 @@ Define rules in a JSON file that both C# and TypeScript can consume:
       "rules": [
         {
           "validator": "notEmpty",
-          "message": "Invoice number is required.",
+          "message": "Numer faktury jest wymagany.",
           "severity": "forbidden"
         },
         {
           "validator": "matches",
           "params": { "pattern": "^INV-\\d{6}$" },
-          "message": "Must match format INV-XXXXXX.",
+          "message": "Musi pasować do formatu INV-XXXXXX.",
           "severity": "forbidden"
         }
       ]
@@ -396,7 +396,7 @@ Define rules in a JSON file that both C# and TypeScript can consume:
         {
           "validator": "greaterThan",
           "params": { "value": 0 },
-          "message": "Amount must be positive.",
+          "message": "Kwota musi być dodatnia.",
           "severity": "forbidden",
           "layers": {
             "api": "forbidden",
@@ -409,50 +409,50 @@ Define rules in a JSON file that both C# and TypeScript can consume:
 }
 ```
 
-Available validator types in JSON: `notNull`, `null`, `notEmpty`, `empty`, `maxLength`, `minLength`, `length`, `email`, `phone`, `matches`, `equal`, `notEqual`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`, `inclusiveBetween`.
+Dostępne typy walidatorów w JSON: `notNull`, `null`, `notEmpty`, `empty`, `maxLength`, `minLength`, `length`, `email`, `phone`, `matches`, `equal`, `notEqual`, `greaterThan`, `greaterThanOrEqual`, `lessThan`, `lessThanOrEqual`, `inclusiveBetween`.
 
-### Loading Definitions
+### Wczytywanie definicji
 
 ```csharp
 using Common.Validation.Json;
 
 var loader = new JsonValidationDefinitionLoader();
 
-// From a file
+// Z pliku
 var definition = loader.LoadFromFile("Invoice.validation.json");
 
-// From a JSON string (e.g., fetched from an API or embedded resource)
+// Z ciągu JSON (np. pobranego z API lub zasobu osadzonego)
 var definition = loader.Load(jsonString);
 
-// From all *.validation.json files in a directory
+// Ze wszystkich plików *.validation.json w katalogu
 var definitions = loader.LoadFromDirectory("Validations/");
 
-// Create a validator from the definition
+// Utworzenie walidatora z definicji
 var validator = new JsonValidator<Invoice>(definition);
 var result = validator.Validate(invoice);
 ```
 
-### Custom Validator Types
+### Niestandardowe typy walidatorów
 
-Extend the registry with domain-specific validators:
+Rozszerz rejestr o walidatory specyficzne dla domeny:
 
 ```csharp
 using Common.Validation.Json.Registry;
 
 var registry = new ValidatorTypeRegistry();
 
-// Register a custom "iban" validator
+// Rejestracja niestandardowego walidatora "iban"
 registry.Register("iban", parameters =>
 {
     return new DelegatePropertyCheck(value =>
         value is string s && s.Length >= 15 && s.Length <= 34 && s.StartsWith("PL"));
 });
 
-// Use it
+// Użycie
 var validator = new JsonValidator<BankAccount>(definition, registry);
 ```
 
-To implement `IPropertyCheck`:
+Implementacja `IPropertyCheck`:
 
 ```csharp
 public class IbanCheck : IPropertyCheck
@@ -469,9 +469,9 @@ public class IbanCheck : IPropertyCheck
 
 ---
 
-## Dependency Injection
+## Wstrzykiwanie zależności
 
-### Basic Setup
+### Podstawowa konfiguracja
 
 ```csharp
 using Common.Validation.DependencyInjection;
@@ -486,26 +486,26 @@ builder.Services.AddCommonValidation(options =>
 });
 ```
 
-### Assembly Scanning
+### Skanowanie assembly
 
-Automatically discover and register all validators in an assembly:
+Automatyczne wykrywanie i rejestracja wszystkich walidatorów w assembly:
 
 ```csharp
-// Scan a specific assembly
+// Skanuj konkretne assembly
 builder.Services.AddValidatorsFromAssembly(typeof(Program).Assembly);
 
-// Or use a marker type
+// Lub użyj typu znacznikowego
 builder.Services.AddValidatorsFromAssemblyContaining<CreateOrderValidator>();
 
-// Control lifetime (default: Transient)
+// Kontrola czasu życia (domyślnie: Transient)
 builder.Services.AddValidatorsFromAssembly(
     typeof(Program).Assembly,
     ServiceLifetime.Scoped);
 ```
 
-### Validator Factory
+### Fabryka walidatorów
 
-Resolve validators at runtime when you don't know the type at compile time:
+Rozwiązywanie walidatorów w czasie wykonywania, gdy typ nie jest znany w czasie kompilacji:
 
 ```csharp
 public class ValidationMiddleware
@@ -521,8 +521,7 @@ public class ValidationMiddleware
     {
         var validator = _factory.GetValidator<T>();
         if (validator is null)
-            return new ValidationResult(); // no validator registered, pass through
-
+            return new ValidationResult(); // brak zarejestrowanego walidatora, przepuść
         return validator.Validate(model);
     }
 }
@@ -530,17 +529,17 @@ public class ValidationMiddleware
 
 ---
 
-## Property-Level Validation
+## Walidacja na poziomie właściwości
 
-You can validate a single property instead of the entire object. This is useful for:
+Możesz walidować pojedynczą właściwość zamiast całego obiektu. Jest to przydatne w przypadku:
 
-- **Real-time field validation** (e.g., on blur) without re-running rules for untouched fields
-- **Partial updates** where only certain fields changed
-- **Performance** when the object has many properties but you care about one
+- **Walidacji pól w czasie rzeczywistym** (np. przy utracie fokusu) bez ponownego uruchamiania reguł dla nietkniętych pól
+- **Częściowych aktualizacji**, gdzie zmieniły się tylko niektóre pola
+- **Wydajności**, gdy obiekt ma wiele właściwości, a interesuje Cię tylko jedna
 
-### Usage
+### Użycie
 
-Use the `ValidateProperty` extension method on any `IValidator<T>`:
+Użyj metody rozszerzającej `ValidateProperty` na dowolnym `IValidator<T>`:
 
 ```csharp
 using Common.Validation.Extensions;
@@ -548,40 +547,40 @@ using Common.Validation.Extensions;
 var validator = new CreateOrderValidator();
 var order = new CreateOrderRequest { CustomerName = "", Email = "bad", Total = -5 };
 
-// Validate only the Email field
+// Waliduj tylko pole Email
 var emailResult = validator.ValidateProperty(order, x => x.Email);
 
 if (emailResult.IsValid)
-    Console.WriteLine("Email is valid");
+    Console.WriteLine("Email jest prawidłowy");
 else
     foreach (var e in emailResult.Errors)
         Console.WriteLine($"{e.PropertyName}: {e.ErrorMessage}");
 ```
 
-### With Validation Context
+### Z kontekstem walidacji
 
-Property-level validation respects the same layer and context as full validation:
+Walidacja na poziomie właściwości respektuje te same warstwy i kontekst co pełna walidacja:
 
 ```csharp
 var context = ValidationContext.ForLayer("entity");
 var result = validator.ValidateProperty(model, x => x.FirstName, context);
 ```
 
-### Supported Validators
+### Obsługiwane walidatory
 
-- **AbstractValidator&lt;T&gt;** – Validates only the rules defined for the specified property.
-- **JsonValidator&lt;T&gt;** – Validates only the rules from the JSON definition for that property.
-- **Other IValidator&lt;T&gt;** – Falls back to full validation and filters the result by property name (less efficient but works).
+- **AbstractValidator&lt;T&gt;** -- Waliduje tylko reguły zdefiniowane dla wskazanej właściwości.
+- **JsonValidator&lt;T&gt;** -- Waliduje tylko reguły z definicji JSON dla danej właściwości.
+- **Inne IValidator&lt;T&gt;** -- Wykonuje pełną walidację i filtruje wynik po nazwie właściwości (mniej wydajne, ale działa).
 
-### JSON-based property validation
+### Walidacja właściwości oparta na JSON
 
-`JsonValidator<T>` supports property-level validation with the same rules defined in your JSON definition. This is useful when rules come from configuration or are shared with a TypeScript frontend:
+`JsonValidator<T>` obsługuje walidację na poziomie właściwości z tymi samymi regułami zdefiniowanymi w definicji JSON. Jest to przydatne, gdy reguły pochodzą z konfiguracji lub są współdzielone z frontendem TypeScript:
 
 ```csharp
 using Common.Validation.Extensions;
 using Common.Validation.Json;
 
-// Load definition (e.g. from PersonalData.validation.json)
+// Wczytaj definicję (np. z PersonalData.validation.json)
 var definition = "PersonalData.validation.json".LoadFromFile();
 var validator = new JsonValidator<PersonalData>(definition);
 
@@ -589,53 +588,53 @@ var model = new PersonalData
 {
     FirstName = "Jan",
     LastName = "Nowak",
-    Email = "invalid-email",  // Invalid
+    Email = "nieprawidłowy-email",  // Nieprawidłowy
     Citizenship = "PL",
-    TaxResidency = ""        // Not recommended
+    TaxResidency = ""               // Niezalecane
 };
 
-// Validate only the Email field
+// Waliduj tylko pole Email
 var emailResult = validator.ValidateProperty(model, x => x.Email);
 
 if (!emailResult.IsValid)
     foreach (var e in emailResult.Errors)
         Console.WriteLine($"{e.PropertyName}: {e.ErrorMessage}");
-// Output: Email: Invalid email format.
+// Wynik: Email: Nieprawidłowy format email.
 ```
 
-Layer context is respected when validating a single property:
+Kontekst warstwy jest respektowany przy walidacji pojedynczej właściwości:
 
 ```csharp
 var context = ValidationContext.ForLayer("entity");
 var result = validator.ValidateProperty(model, x => x.FirstName, context);
-// Uses "entity" layer severities from the JSON definition
+// Używa istotności warstwy "entity" z definicji JSON
 ```
 
-### When to Use
+### Kiedy używać
 
-| Scenario | Use |
+| Scenariusz | Użycie |
 |----------|-----|
-| Form field blur / `onChange` | `ValidateProperty` |
-| Submit button clicked | `Validate` |
-| API receives partial PATCH | `ValidateProperty` per changed field |
-| Full model save | `Validate` |
+| Utrata fokusu pola / `onChange` | `ValidateProperty` |
+| Kliknięcie przycisku wyślij | `Validate` |
+| API otrzymuje częściowy PATCH | `ValidateProperty` dla każdego zmienionego pola |
+| Pełny zapis modelu | `Validate` |
 
 ---
 
-## Standalone Value Validation
+## Samodzielna walidacja wartości
 
-Sometimes you need to validate a value on its own — without embedding it in a model class, without an `AbstractValidator<T>`, and without any parent object at all. Common.Validation provides a standalone value validation system that mirrors the full fluent API but operates directly on a single value.
+Czasami potrzebujesz zwalidować wartość samodzielnie -- bez osadzania jej w klasie modelu, bez `AbstractValidator<T>` i bez jakiegokolwiek obiektu nadrzędnego. Common.Validation dostarcza samodzielny system walidacji wartości, który odzwierciedla pełne Fluent API, ale operuje bezpośrednio na pojedynczej wartości.
 
-**Why standalone?**
+**Dlaczego samodzielna walidacja?**
 
-- **Reusable rules.** Define "what a valid email looks like" once; use it across REST models, DTOs, Blazor form fields, and TypeScript.
-- **No container coupling.** A phone number validator should not care whether the phone lives on a `Person`, an `Order`, or a raw `string` from a form input.
-- **Client-side friendly.** Standalone validators map naturally to single-field validation in Blazor or TypeScript, where you often receive a raw value rather than a full object.
-- **Composable.** Standalone validators can be invoked inside object validators via `.Must()`, or composed with `ValidationResult.Combine()`.
+- **Reguły wielokrotnego użytku.** Zdefiniuj "jak wygląda prawidłowy email" raz; używaj go w modelach REST, DTO, polach formularzy Blazor i TypeScript.
+- **Brak sprzężenia z kontenerem.** Walidator numeru telefonu nie powinien wiedzieć, czy telefon należy do `Person`, `Order` czy surowego `string` z formularza.
+- **Przyjazny dla klienta.** Samodzielne walidatory naturalnie mapują się na walidację pojedynczego pola w Blazor lub TypeScript, gdzie często otrzymujesz surową wartość zamiast pełnego obiektu.
+- **Kompozycyjny.** Samodzielne walidatory można wywoływać wewnątrz walidatorów obiektowych przez `.Must()` lub komponować za pomocą `ValidationResult.Combine()`.
 
-### Class-Based Value Validators
+### Walidatory wartości oparte na klasach
 
-Inherit from `ValueValidator<TProperty>` to create a reusable, named validator:
+Dziedzicz z `ValueValidator<TProperty>`, aby utworzyć wielokrotnie używalny, nazwany walidator:
 
 ```csharp
 using Common.Validation.Core;
@@ -646,14 +645,14 @@ public class EmailValidator : ValueValidator<string>
     public EmailValidator() : base("Email")
     {
         Check()
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Must be a valid email address.")
-            .MaxLength(255).WithMessage("Email is too long.");
+            .NotEmpty().WithMessage("Email jest wymagany.")
+            .EmailAddress().WithMessage("Musi być prawidłowym adresem email.")
+            .MaxLength(255).WithMessage("Email jest za długi.");
     }
 }
 ```
 
-Use it — no parent object, no model class:
+Użycie -- bez obiektu nadrzędnego, bez klasy modelu:
 
 ```csharp
 var validator = new EmailValidator();
@@ -661,13 +660,13 @@ var validator = new EmailValidator();
 var result = validator.Validate("user@example.com");
 // result.IsValid == true
 
-var invalid = validator.Validate("not-an-email");
+var invalid = validator.Validate("nie-email");
 // invalid.IsValid == false
-// invalid.Errors[0].ErrorMessage == "Must be a valid email address."
+// invalid.Errors[0].ErrorMessage == "Musi być prawidłowym adresem email."
 // invalid.Errors[0].PropertyName == "Email"
 ```
 
-You can define validators for any type:
+Możesz definiować walidatory dla dowolnego typu:
 
 ```csharp
 public class AgeValidator : ValueValidator<int>
@@ -675,8 +674,8 @@ public class AgeValidator : ValueValidator<int>
     public AgeValidator() : base("Age")
     {
         Check()
-            .GreaterThanOrEqual(0).WithMessage("Age cannot be negative.")
-            .LessThanOrEqual(150).WithMessage("Age is unrealistic.");
+            .GreaterThanOrEqual(0).WithMessage("Wiek nie może być ujemny.")
+            .LessThanOrEqual(150).WithMessage("Wiek jest nierealistyczny.");
     }
 }
 
@@ -685,25 +684,25 @@ public class PasswordStrengthValidator : ValueValidator<string>
     public PasswordStrengthValidator() : base("Password")
     {
         Check()
-            .NotEmpty().WithMessage("Password is required.")
-            .MinLength(8).WithMessage("Must be at least 8 characters.")
-            .Matches(@"[A-Z]").WithMessage("Must contain an uppercase letter.")
+            .NotEmpty().WithMessage("Hasło jest wymagane.")
+            .MinLength(8).WithMessage("Musi mieć co najmniej 8 znaków.")
+            .Matches(@"[A-Z]").WithMessage("Musi zawierać wielką literę.")
                 .WithSeverity(Severity.AtOwnRisk)
-            .Matches(@"\d").WithMessage("Must contain a digit.")
+            .Matches(@"\d").WithMessage("Musi zawierać cyfrę.")
                 .WithSeverity(Severity.AtOwnRisk);
     }
 }
 ```
 
-### Inline Factory
+### Fabryka inline
 
-For quick, ad-hoc validation without a dedicated class, use `ValueValidator.Create<T>()`:
+Do szybkiej, doraźnej walidacji bez dedykowanej klasy użyj `ValueValidator.Create<T>()`:
 
 ```csharp
 var phoneValidator = ValueValidator.Create<string>(
     configure: b => b
-        .NotEmpty().WithMessage("Phone number is required.")
-        .PhoneNumber().WithMessage("Not a valid phone format."),
+        .NotEmpty().WithMessage("Numer telefonu jest wymagany.")
+        .PhoneNumber().WithMessage("Nieprawidłowy format telefonu."),
     propertyName: "Phone");
 
 var result = phoneValidator.Validate("+48 123 456 789");
@@ -713,14 +712,14 @@ var result = phoneValidator.Validate("+48 123 456 789");
 ```csharp
 var percentValidator = ValueValidator.Create<decimal>(
     configure: b => b
-        .InclusiveBetween(0m, 100m).WithMessage("Must be a percentage (0–100)."),
+        .InclusiveBetween(0m, 100m).WithMessage("Musi być wartością procentową (0–100)."),
     propertyName: "Discount");
 
 var result = percentValidator.Validate(105m);
 // result.IsValid == false
 ```
 
-When you omit `propertyName`, it defaults to the type name (e.g., `"String"`, `"Int32"`):
+Gdy pominiesz `propertyName`, domyślnie przyjmowana jest nazwa typu (np. `"String"`, `"Int32"`):
 
 ```csharp
 var notEmpty = ValueValidator.Create<string>(b => b.NotEmpty());
@@ -728,21 +727,21 @@ var result = notEmpty.Validate("");
 // result.Errors[0].PropertyName == "String"
 ```
 
-### Standalone Rules & Modifiers
+### Reguły i modyfikatory w trybie samodzielnym
 
-Standalone validators support the same rules and modifiers as object validators:
+Samodzielne walidatory obsługują te same reguły i modyfikatory co walidatory obiektowe:
 
-**Common rules** (any type): `.NotNull()`, `.Null()`, `.NotEmpty()`, `.Empty()`, `.Equal(value)`, `.NotEqual(value)`, `.Must(predicate, msg)`
+**Reguły ogólne** (dowolny typ): `.NotNull()`, `.Null()`, `.NotEmpty()`, `.Empty()`, `.Equal(value)`, `.NotEqual(value)`, `.Must(predicate, msg)`
 
-**String rules:** `.MinLength(n)`, `.MaxLength(n)`, `.Length(min, max)`, `.Matches(pattern)`, `.EmailAddress()`, `.PhoneNumber()`
+**Reguły tekstowe:** `.MinLength(n)`, `.MaxLength(n)`, `.Length(min, max)`, `.Matches(pattern)`, `.EmailAddress()`, `.PhoneNumber()`
 
-**Comparison rules** (`IComparable<T>`): `.GreaterThan(n)`, `.GreaterThanOrEqual(n)`, `.LessThan(n)`, `.LessThanOrEqual(n)`, `.InclusiveBetween(a, b)`
+**Reguły porównawcze** (`IComparable<T>`): `.GreaterThan(n)`, `.GreaterThanOrEqual(n)`, `.LessThan(n)`, `.LessThanOrEqual(n)`, `.InclusiveBetween(a, b)`
 
-**Modifiers:** `.WithMessage("...")`, `.WithErrorCode("...")`, `.WithSeverity(Severity.X)`, `.WithLayerSeverity("api", Severity.X)`, `.Cascade(CascadeMode.StopOnFirstFailure)`
+**Modyfikatory:** `.WithMessage("...")`, `.WithErrorCode("...")`, `.WithSeverity(Severity.X)`, `.WithLayerSeverity("api", Severity.X)`, `.Cascade(CascadeMode.StopOnFirstFailure)`
 
-### Layer Support in Standalone Mode
+### Obsługa warstw w trybie samodzielnym
 
-Standalone validators fully support multi-layer severity overrides:
+Samodzielne walidatory w pełni obsługują wielowarstwowe nadpisywanie istotności:
 
 ```csharp
 public class TaxIdValidator : ValueValidator<string>
@@ -750,7 +749,7 @@ public class TaxIdValidator : ValueValidator<string>
     public TaxIdValidator() : base("TaxId")
     {
         Check()
-            .NotEmpty().WithMessage("Tax ID is required.")
+            .NotEmpty().WithMessage("NIP jest wymagany.")
             .WithSeverity(Severity.Forbidden)
             .WithLayerSeverity("api", Severity.Forbidden)
             .WithLayerSeverity("dto", Severity.AtOwnRisk)
@@ -760,53 +759,53 @@ public class TaxIdValidator : ValueValidator<string>
 
 var validator = new TaxIdValidator();
 
-// Default severity: Forbidden
+// Domyślna istotność: Forbidden
 var defaultResult = validator.Validate("");
 // defaultResult.Errors[0].Severity == Severity.Forbidden
 
-// API layer: still Forbidden
+// Warstwa API: nadal Forbidden
 var apiResult = validator.Validate("", ValidationContext.ForLayer("api"));
 // apiResult.Errors[0].Severity == Severity.Forbidden
 
-// Entity layer: just a recommendation
+// Warstwa encji: tylko zalecenie
 var entityResult = validator.Validate("", ValidationContext.ForLayer("entity"));
 // entityResult.Errors[0].Severity == Severity.NotRecommended
 ```
 
-### Value-Based Conditions
+### Warunki oparte na wartości
 
-In object validators, `When()` / `Unless()` receive the parent instance. In standalone mode, they receive the value itself:
+W walidatorach obiektowych `When()` / `Unless()` otrzymują instancję obiektu nadrzędnego. W trybie samodzielnym otrzymują samą wartość:
 
 ```csharp
 var validator = ValueValidator.Create<string>(
     configure: b => b
-        // Only validate length when the value is not null
+        // Waliduj długość tylko gdy wartość nie jest null
         .When(value => value is not null)
-        .MinLength(3).WithMessage("Too short — must be at least 3 characters.")
-        .MaxLength(50).WithMessage("Too long — at most 50 characters."),
+        .MinLength(3).WithMessage("Za krótkie — musi mieć co najmniej 3 znaki.")
+        .MaxLength(50).WithMessage("Za długie — co najwyżej 50 znaków."),
     propertyName: "Code");
 
-validator.Validate(null!).IsValid;   // true  — condition skipped
-validator.Validate("ab").IsValid;    // false — MinLength fails
+validator.Validate(null!).IsValid;   // true  — warunek pominięty
+validator.Validate("ab").IsValid;    // false — MinLength nie przeszedł
 validator.Validate("abc").IsValid;   // true
 ```
 
 ```csharp
 var validator = ValueValidator.Create<string>(
     configure: b => b
-        // Skip validation when the value is null (optional field)
+        // Pomiń walidację gdy wartość jest null (pole opcjonalne)
         .Unless(value => value is null)
-        .EmailAddress().WithMessage("Not a valid email."),
+        .EmailAddress().WithMessage("Nieprawidłowy adres email."),
     propertyName: "SecondaryEmail");
 
-validator.Validate(null!).IsValid;          // true  — skipped
-validator.Validate("bad").IsValid;          // false — checked
-validator.Validate("a@b.com").IsValid;      // true  — valid
+validator.Validate(null!).IsValid;          // true  — pominięto
+validator.Validate("bad").IsValid;          // false — sprawdzono
+validator.Validate("a@b.com").IsValid;      // true  — prawidłowy
 ```
 
-### Multiple Check Chains
+### Wielokrotne łańcuchy sprawdzeń
 
-Call `Check()` multiple times inside a class-based validator to create independent rule chains. Combined with `CascadeMode.StopOnFirstFailure` on the validator, you can control the flow precisely:
+Wywołaj `Check()` wielokrotnie wewnątrz walidatora opartego na klasie, aby utworzyć niezależne łańcuchy reguł. W połączeniu z `CascadeMode.StopOnFirstFailure` na walidatorze możesz precyzyjnie kontrolować przepływ:
 
 ```csharp
 public class StrictCodeValidator : ValueValidator<string>
@@ -815,44 +814,44 @@ public class StrictCodeValidator : ValueValidator<string>
     {
         CascadeMode = CascadeMode.StopOnFirstFailure;
 
-        Check().NotNull().WithMessage("Code is required.");
-        Check().MinLength(5).WithMessage("Code is too short.");
-        Check().Matches(@"^[A-Z0-9]+$").WithMessage("Code must be uppercase alphanumeric.");
+        Check().NotNull().WithMessage("Kod jest wymagany.");
+        Check().MinLength(5).WithMessage("Kod jest za krótki.");
+        Check().Matches(@"^[A-Z0-9]+$").WithMessage("Kod musi składać się z wielkich liter i cyfr.");
     }
 }
 
 var validator = new StrictCodeValidator();
 var result = validator.Validate(null!);
-// result.Errors.Count == 1  (stopped after "Code is required.")
+// result.Errors.Count == 1  (zatrzymano po "Kod jest wymagany.")
 ```
 
-### Non-Generic Interface
+### Interfejs niegeneryczny
 
-Like `IValidator`, the standalone system provides a non-generic `IValueValidator` interface for DI and runtime scenarios:
+Podobnie jak `IValidator`, system samodzielny udostępnia niegeneryczny interfejs `IValueValidator` dla DI i scenariuszy w czasie wykonywania:
 
 ```csharp
 IValueValidator validator = new EmailValidator();
 
 Console.WriteLine(validator.ValidatedType);        // System.String
-var result = validator.Validate("test@test.com");   // works with object?
+var result = validator.Validate("test@test.com");   // działa z object?
 ```
 
-### When to Use Standalone vs Object Validation
+### Kiedy używać walidacji samodzielnej a obiektowej
 
-| Scenario | Approach |
+| Scenariusz | Podejście |
 |----------|----------|
-| Validate a form field individually | **Standalone** (`ValueValidator<string>`) |
-| Validate an API request model | **Object** (`AbstractValidator<T>`) |
-| Reusable "is this a valid email?" check | **Standalone** (`EmailValidator`) |
-| Cross-property rule (end > start date) | **Object** (`.Must((obj, val) => ...)`) |
-| Blazor `@onblur` on a single `<input>` | **Standalone** or `ValidateProperty` |
-| TypeScript single-field validation | **Standalone** (same mental model) |
-| Full model save / submit | **Object** (`AbstractValidator<T>`) |
-| Shared validation logic between models | **Standalone** (compose via `.Must()` or `Combine`) |
+| Walidacja pojedynczego pola formularza | **Samodzielna** (`ValueValidator<string>`) |
+| Walidacja modelu żądania API | **Obiektowa** (`AbstractValidator<T>`) |
+| Wielokrotnie używalne sprawdzenie "czy to prawidłowy email?" | **Samodzielna** (`EmailValidator`) |
+| Reguła międzywłaściwościowa (koniec > data rozpoczęcia) | **Obiektowa** (`.Must((obj, val) => ...)`) |
+| Blazor `@onblur` na pojedynczym `<input>` | **Samodzielna** lub `ValidateProperty` |
+| Walidacja pojedynczego pola w TypeScript | **Samodzielna** (ten sam model mentalny) |
+| Pełny zapis / wysłanie modelu | **Obiektowa** (`AbstractValidator<T>`) |
+| Współdzielona logika walidacji między modelami | **Samodzielna** (komponuj przez `.Must()` lub `Combine`) |
 
-### Composing Standalone with Object Validators
+### Kompozycja samodzielnych z obiektowymi walidatorami
 
-Reuse a standalone validator inside an object validator:
+Ponowne użycie samodzielnego walidatora wewnątrz walidatora obiektowego:
 
 ```csharp
 var emailValidator = new EmailValidator();
@@ -866,16 +865,16 @@ public class ContactValidator : AbstractValidator<Contact>
     {
         RuleFor(x => x.Email)
             .Must(value => emailValidator.Validate(value).IsValid,
-                  "Must be a valid email address.");
+                  "Musi być prawidłowym adresem email.");
 
         RuleFor(x => x.Phone)
             .Must(value => phoneValidator.Validate(value).IsValid,
-                  "Must be a valid phone number.");
+                  "Musi być prawidłowym numerem telefonu.");
     }
 }
 ```
 
-Or merge results explicitly:
+Lub jawne scalanie wyników:
 
 ```csharp
 var emailResult = emailValidator.Validate(formData.Email);
@@ -887,11 +886,11 @@ if (combined.HasForbidden) { /* ... */ }
 
 ---
 
-## Blazor Integration
+## Integracja z Blazor
 
-### Components
+### Komponenty
 
-**Validation summary** -- displays all failures grouped by severity:
+**Podsumowanie walidacji** -- wyświetla wszystkie niepowodzenia pogrupowane według istotności:
 
 ```razor
 @using Common.Validation.Blazor
@@ -899,21 +898,21 @@ if (combined.HasForbidden) { /* ... */ }
 <CvValidationSummary Result="@_validationResult" />
 ```
 
-**Per-field messages** -- display failures for a specific property:
+**Komunikaty per pole** -- wyświetla niepowodzenia dla konkretnej właściwości:
 
 ```razor
 <InputText @bind-Value="_model.Email" class="form-control" />
 <CvValidationMessage Result="@_result" PropertyName="Email" />
 ```
 
-Both components use CSS classes for severity-based styling:
-- `.cv-forbidden` -- red
-- `.cv-at-own-risk` -- amber
-- `.cv-not-recommended` -- gray
+Oba komponenty używają klas CSS do stylowania opartego na istotności:
+- `.cv-forbidden` -- czerwony
+- `.cv-at-own-risk` -- bursztynowy
+- `.cv-not-recommended` -- szary
 
-### EditContext Integration
+### Integracja z EditContext
 
-Hook into Blazor's built-in form validation:
+Podłączenie do wbudowanej walidacji formularzy Blazor:
 
 ```csharp
 @using Common.Validation.Blazor
@@ -922,7 +921,7 @@ Hook into Blazor's built-in form validation:
     <InputText @bind-Value="_model.Name" />
     <ValidationMessage For="@(() => _model.Name)" />
 
-    <button type="submit">Save</button>
+    <button type="submit">Zapisz</button>
 </EditForm>
 
 @code {
@@ -939,15 +938,15 @@ Hook into Blazor's built-in form validation:
 
 ---
 
-## TypeScript Client
+## Klient TypeScript
 
-The TypeScript package consumes the same JSON definitions as the C# backend:
+Pakiet TypeScript konsumuje te same definicje JSON co backend C#:
 
 ```typescript
 import { Validator } from 'common-validation';
 import type { ValidationDefinition } from 'common-validation';
 
-// Load the same JSON definition used by the backend
+// Wczytaj tę samą definicję JSON używaną przez backend
 const definition: ValidationDefinition = await fetch('/api/validations/invoice')
   .then(r => r.json());
 
@@ -965,14 +964,14 @@ if (result.hasForbidden) {
 }
 ```
 
-Layer-aware validation works the same way:
+Walidacja uwzględniająca warstwy działa tak samo:
 
 ```typescript
-// Validate with a specific layer
+// Waliduj z konkretną warstwą
 const result = validator.validate(formData, 'api');
 ```
 
-Register custom validators on the client side:
+Rejestracja niestandardowych walidatorów po stronie klienta:
 
 ```typescript
 import { Validator } from 'common-validation';
@@ -985,44 +984,44 @@ const validator = new Validator(definition, {
 
 ---
 
-## Architecture
+## Architektura
 
 ```
 common.validation/
   src/
-    Common.Validation/                   # Core NuGet package
+    Common.Validation/                   # Główny pakiet NuGet
       Core/                              #   IValidator, AbstractValidator, Severity,
                                          #   ValidationResult, CascadeMode, ValidationContext
-                                         #   IValueValidator, ValueValidator (standalone)
+                                         #   IValueValidator, ValueValidator (samodzielna)
       Rules/                             #   IRuleBuilder, IValidationRule, PropertyRule
-                                         #   IValueRuleBuilder, IValueValidationRule, ValueRule (standalone)
-      Extensions/                        #   Fluent API (NotEmpty, MaxLength, WithSeverity, etc.)
-                                         #   Standalone extensions (*ValueRule* variants)
+                                         #   IValueRuleBuilder, IValueValidationRule, ValueRule (samodzielna)
+      Extensions/                        #   Fluent API (NotEmpty, MaxLength, WithSeverity, itp.)
+                                         #   Rozszerzenia samodzielne (warianty *ValueRule*)
       Layers/                            #   ValidationLayerAttribute
-      Json/                              #   JsonValidator, definition models, loader
-        Registry/                        #   IValidatorTypeRegistry, built-in checks
+      Json/                              #   JsonValidator, modele definicji, loader
+        Registry/                        #   IValidatorTypeRegistry, wbudowane kontrole
       DependencyInjection/               #   AddCommonValidation, IValidatorFactory
-    Common.Validation.Blazor/            # Blazor NuGet package (Razor Class Library)
+    Common.Validation.Blazor/            # Pakiet NuGet Blazor (Razor Class Library)
                                          #   CvValidationSummary, CvValidationMessage,
-                                         #   EditContext extensions, CSS isolation
+                                         #   rozszerzenia EditContext, izolacja CSS
   client/
-    common-validation/                   # TypeScript npm package
-      src/                              #   Validator, types, built-in rules
-      schema/                           #   JSON Schema for IDE autocompletion
+    common-validation/                   # Pakiet npm TypeScript
+      src/                              #   Validator, typy, wbudowane reguły
+      schema/                           #   JSON Schema dla autouzupełniania w IDE
   tests/
-    Common.Validation.Tests/             # xUnit tests (213 tests)
+    Common.Validation.Tests/             # Testy xUnit (213 testów)
   demo/
-    Common.Validation.Demo/              # Console demo (fluent, layers, JSON, DI)
-    Common.Validation.Demo.Blazor/       # Blazor interactive demo
+    Common.Validation.Demo/              # Demo konsolowe (fluent, warstwy, JSON, DI)
+    Common.Validation.Demo.Blazor/       # Demo interaktywne Blazor
 ```
 
 ---
 
-## Use Cases
+## Przypadki użycia
 
-### REST API Input Validation
+### Walidacja danych wejściowych REST API
 
-Validate incoming requests in a controller or middleware, rejecting `Forbidden` failures and passing through `AtOwnRisk` / `NotRecommended` as response headers or metadata.
+Waliduj przychodzące żądania w kontrolerze lub middleware, odrzucając niepowodzenia `Forbidden` i przekazując `AtOwnRisk` / `NotRecommended` jako nagłówki odpowiedzi lub metadane.
 
 ```csharp
 [HttpPost]
@@ -1042,9 +1041,9 @@ public IActionResult CreateUser([FromBody] CreateUserRequest request)
 }
 ```
 
-### Multi-Tenant Configurable Validation
+### Konfigurowalna walidacja wielodostępna (multi-tenant)
 
-Load validation rules from a database or configuration API per tenant, using JSON definitions:
+Wczytuj reguły walidacji z bazy danych lub API konfiguracyjnego dla każdego tenanta, używając definicji JSON:
 
 ```csharp
 builder.Services.AddCommonValidation(options =>
@@ -1053,35 +1052,35 @@ builder.Services.AddCommonValidation(options =>
 });
 ```
 
-### Form Wizard with Progressive Strictness
+### Kreator formularzy z progresywną rygorystycznością
 
-In a multi-step form, earlier steps use relaxed severity; the final step enforces everything:
+W formularzu wielokrokowym wcześniejsze kroki używają łagodnej istotności; ostatni krok wymusza wszystko:
 
 ```csharp
-// Step 1: only show hints
+// Krok 1: pokaż tylko wskazówki
 var step1Context = ValidationContext.ForLayer("draft");
 
-// Step 2: warn about risks
+// Krok 2: ostrzeż o ryzykach
 var step2Context = ValidationContext.ForLayer("review");
 
-// Final submit: block on forbidden
+// Końcowe wysłanie: blokuj przy forbidden
 var submitContext = ValidationContext.ForLayer("api");
 ```
 
-### Shared Client-Server Validation
+### Współdzielona walidacja klient-serwer
 
-Define rules in JSON, serve them from the API, validate on both sides:
+Zdefiniuj reguły w JSON, serwuj je z API, waliduj po obu stronach:
 
 ```
 Backend:  JsonValidator<T>(definition)          --> ValidationResult
 Frontend: new Validator(definition).validate(t) --> ValidationResult
 ```
 
-Both produce the same failures for the same input, ensuring UI error messages match server-side enforcement.
+Oba generują te same niepowodzenia dla tych samych danych wejściowych, zapewniając zgodność komunikatów błędów w UI z egzekwowaniem po stronie serwera.
 
-### PATCH API with per-field JSON validation
+### PATCH API z walidacją per pole opartą na JSON
 
-When handling partial updates (PATCH), validate only the fields that changed using rules from a JSON definition:
+Przy obsłudze częściowych aktualizacji (PATCH) waliduj tylko pola, które się zmieniły, używając reguł z definicji JSON:
 
 ```csharp
 [HttpPatch("{id}")]
@@ -1109,21 +1108,21 @@ public IActionResult UpdateUser(Guid id, [FromBody] Dictionary<string, object?> 
 }
 ```
 
-This avoids validating untouched fields and keeps rules consistent with the shared JSON definition.
+Pozwala to uniknąć walidacji nietkniętych pól i zachowuje spójność reguł ze współdzieloną definicją JSON.
 
-### Reusable Field Validators Across Multiple Models
+### Wielokrotnie używalne walidatory pól w wielu modelach
 
-Define validation once for a data concept, reuse it in every model that contains it:
+Zdefiniuj walidację raz dla koncepcji danych, używaj jej ponownie w każdym modelu, który ją zawiera:
 
 ```csharp
-// Define once
+// Zdefiniuj raz
 public class EmailValidator : ValueValidator<string>
 {
     public EmailValidator() : base("Email")
     {
         Check()
-            .NotEmpty().WithMessage("Email is required.")
-            .EmailAddress().WithMessage("Must be a valid email address.")
+            .NotEmpty().WithMessage("Email jest wymagany.")
+            .EmailAddress().WithMessage("Musi być prawidłowym adresem email.")
             .MaxLength(255);
     }
 }
@@ -1133,12 +1132,12 @@ public class PhoneValidator : ValueValidator<string>
     public PhoneValidator() : base("Phone")
     {
         Check()
-            .NotEmpty().WithMessage("Phone is required.")
-            .PhoneNumber().WithMessage("Must be a valid phone number.");
+            .NotEmpty().WithMessage("Telefon jest wymagany.")
+            .PhoneNumber().WithMessage("Musi być prawidłowym numerem telefonu.");
     }
 }
 
-// Reuse in object validators
+// Używaj ponownie w walidatorach obiektowych
 var email = new EmailValidator();
 var phone = new PhoneValidator();
 
@@ -1147,10 +1146,10 @@ public class CustomerValidator : AbstractValidator<Customer>
     public CustomerValidator()
     {
         RuleFor(x => x.Email)
-            .Must(v => email.Validate(v).IsValid, "Invalid email.");
+            .Must(v => email.Validate(v).IsValid, "Nieprawidłowy email.");
 
         RuleFor(x => x.Phone)
-            .Must(v => phone.Validate(v).IsValid, "Invalid phone.");
+            .Must(v => phone.Validate(v).IsValid, "Nieprawidłowy telefon.");
     }
 }
 
@@ -1159,14 +1158,14 @@ public class EmployeeValidator : AbstractValidator<Employee>
     public EmployeeValidator()
     {
         RuleFor(x => x.WorkEmail)
-            .Must(v => email.Validate(v).IsValid, "Invalid work email.");
+            .Must(v => email.Validate(v).IsValid, "Nieprawidłowy email służbowy.");
     }
 }
 ```
 
-### Domain Entity Invariants
+### Niezmienniki encji domenowych
 
-Validate invariants within domain entities themselves, using the non-generic `IValidator` interface for polymorphic dispatch:
+Waliduj niezmienniki wewnątrz samych encji domenowych, używając niegenerycznego interfejsu `IValidator` do polimorficznego dispatchu:
 
 ```csharp
 public abstract class Entity
@@ -1179,9 +1178,9 @@ public abstract class Entity
 }
 ```
 
-### Composite Validation Across Aggregates
+### Złożona walidacja w ramach agregatów
 
-Validate an entire aggregate root by merging results from child validators:
+Waliduj cały korzeń agregatu, scalając wyniki z walidatorów podrzędnych:
 
 ```csharp
 var orderResult = _orderValidator.Validate(order);
@@ -1195,22 +1194,22 @@ if (combined.HasForbidden) { /* ... */ }
 
 ---
 
-## Roadmap
+## Plan rozwoju
 
-The project is under active development. Planned directions include:
+Projekt jest aktywnie rozwijany. Planowane kierunki to:
 
-- **Async validation** -- `ValidateAsync` for rules that need I/O (e.g., checking uniqueness against a database). The `IValidator<T>` interface is designed to support this.
-- **Localization** -- message templates with placeholders and resource-file integration for multi-language support.
-- **Source generators** -- compile-time validator discovery and AOT-compatible JSON serialization, eliminating reflection overhead.
-- **Validation profiles** -- named rule sets within a single validator, selectable at validation time (e.g., "create" vs. "update" profiles).
-- **OpenAPI integration** -- auto-generate `x-validation` metadata in Swagger/OpenAPI specs from JSON definitions.
-- **React / Vue adapters** -- framework-specific wrappers around the TypeScript client for seamless form integration.
-- **Rule composition** -- `Include()` and `InheritRulesFrom()` for composing validators from reusable fragments. Automatic bridging of `IValueValidator<T>` into `AbstractValidator<T>` rules via a dedicated extension method.
-- **Diagnostic analyzers** -- Roslyn analyzers to catch common mistakes at compile time (e.g., forgetting `.WithMessage()` after a rule).
+- **Walidacja asynchroniczna** -- `ValidateAsync` dla reguł wymagających operacji I/O (np. sprawdzanie unikalności w bazie danych). Interfejs `IValidator<T>` jest zaprojektowany, aby to wspierać.
+- **Lokalizacja** -- szablony komunikatów z placeholderami i integracja z plikami zasobów dla obsługi wielu języków.
+- **Generatory źródłowe** -- wykrywanie walidatorów w czasie kompilacji i serializacja JSON kompatybilna z AOT, eliminująca narzut refleksji.
+- **Profile walidacji** -- nazwane zestawy reguł w ramach jednego walidatora, wybieralne w czasie walidacji (np. profile "create" vs "update").
+- **Integracja z OpenAPI** -- automatyczne generowanie metadanych `x-validation` w specyfikacjach Swagger/OpenAPI z definicji JSON.
+- **Adaptery React / Vue** -- obudowy specyficzne dla frameworków wokół klienta TypeScript dla bezproblemowej integracji z formularzami.
+- **Kompozycja reguł** -- `Include()` i `InheritRulesFrom()` do komponowania walidatorów z wielokrotnie używalnych fragmentów. Automatyczne mostkowanie `IValueValidator<T>` do reguł `AbstractValidator<T>` za pomocą dedykowanej metody rozszerzającej.
+- **Analizatory diagnostyczne** -- analizatory Roslyn do wykrywania typowych błędów w czasie kompilacji (np. zapomnienie `.WithMessage()` po regule).
 
 ---
 
-## License
+## Licencja
 
-This project is licensed under the **GNU Affero General Public License v3.0** (AGPL-3.0-or-later).
-See [LICENSE.txt](LICENSE.txt) for the full text.
+Projekt jest licencjonowany na zasadach **GNU Affero General Public License v3.0** (AGPL-3.0-or-later).
+Pełny tekst licencji znajduje się w pliku [LICENSE.txt](LICENSE.txt).
